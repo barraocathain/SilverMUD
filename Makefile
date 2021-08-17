@@ -1,3 +1,4 @@
+CC = gcc
 clientsrc = $(wildcard src/misc/*.c) \
 	    src/SilverMUDClient.c
 clientobj = $(clientsrc:.c=.o) 
