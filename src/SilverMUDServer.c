@@ -27,8 +27,8 @@ int main()
 	struct sockaddr_in serverAddress, clientAddress;	
 
 	// Give an intro: Display the Silverkin Industries logo and splash text.
-	slowprint(logostring, 3000);
-	slowprint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.1\n", 5000);
+	slowPrint(logostring, 3000);
+	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.1\n", 5000);
 	 
 	// Initialize the sockets to 0, so we don't crash.
 	for (int index = 0; index < maxClients; index++)  
@@ -46,7 +46,7 @@ int main()
 
 	else
 	{
-		slowprint(" Socket creation is \033[32;40mGREEN.\033[0m\n", 5000);
+		slowPrint(" Socket creation is \033[32;40mGREEN.\033[0m\n", 5000);
 	}
 
 	bzero(&serverAddress, sizeof(serverAddress));
@@ -64,7 +64,7 @@ int main()
 	}
 	else
 	{
-		slowprint(" Socket binding is \033[32;40mGREEN.\033[0m\n", 5000);
+		slowPrint(" Socket binding is \033[32;40mGREEN.\033[0m\n", 5000);
 	}
 	
 	// Let's start listening:
@@ -75,7 +75,7 @@ int main()
 	}
 	else
 	{
-		slowprint(" Server listening is \033[32;40mGREEN.\033[0m\n", 5000);
+		slowPrint(" Server listening is \033[32;40mGREEN.\033[0m\n", 5000);
 	}
 	length = sizeof(clientAddress);
 

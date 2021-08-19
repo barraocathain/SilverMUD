@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-void slowprint(char * stringToPrint, int delay)
+void slowPrint(char * stringToPrint, int delay)
 {
 	int characterIndex = 0;
 	while(stringToPrint[characterIndex] != '\0')

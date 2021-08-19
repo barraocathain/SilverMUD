@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include "misc/texteffects.h"
+#include "misc/inputhandling.h"
 #define MAX 1024
 #define PORT 5000
 #define SA struct sockaddr
@@ -20,11 +21,16 @@ void * messageSender(void * sockfd)
 	{
 		bzero(sendBuffer, MAX);
 		printf("COMM-LINK> ");
-		fgets(sendBuffer, MAX, stdin);
-		if(sendBuffer[0] != '\n');
+		if(fgets(sendBuffer, MAX, stdin) == NULL)
 		{
-			write((long)sockfd, sendBuffer, MAX);
+			exit(0);
 		}
+		userInputSanatize(sendBuffer, MAX);
+		if(sendBuffer[0] == '\n')
+		{
+			continue;
+		}
+		write((long)sockfd, sendBuffer, MAX);
         }
 }
 
@@ -35,9 +41,9 @@ void * messageReceiver(void * sockfd)
 	while (1)
 	{
 		read((long)sockfd, receiveBuffer, MAX);
-		slowprint("\nUSER-MESSAGE: ", 8000);
-		slowprint(receiveBuffer, 8000);
-		slowprint("\nCOMM-LINK (CONT.)> ", 8000);
+		slowPrint("\nUSER-MESSAGE: ", 8000);
+		slowPrint(receiveBuffer, 8000);
+		slowPrint("\nCOMM-LINK (CONT.)> ", 8000);
 		bzero(receiveBuffer, MAX);
 	}
 }
@@ -57,7 +63,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		slowprint("Socket successfully created.\n", 8000);
+		slowPrint("Socket successfully created.\n", 8000);
 	}
 	bzero(&servaddr, sizeof(servaddr));
   
@@ -76,12 +82,12 @@ int main(int argc, char **argv)
 	// Connect the server and client sockets, Kronk:
 	if (connect(sockfd, (SA*)&servaddr, sizeof(servaddr)) != 0)
 	{
-		slowprint("Connection with the Silverkin Industries Comm-Link Server Failed:\nPlease contact your service representative.\n", 8000);
+		slowPrint("Connection with the Silverkin Industries Comm-Link Server Failed:\nPlease contact your service representative.\n", 8000);
 		exit(0);
 	}
 	else
 	{
-		slowprint("Connected to the Silverkin Industries Comm-Link Server:\nHave a pleasant day.\n", 8000);
+		slowPrint("Connected to the Silverkin Industries Comm-Link Server:\nHave a pleasant day.\n", 8000);
 	}
 	
 	// Run a thread to send messages, and use main to recieve.
