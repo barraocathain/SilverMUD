@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <ncurses.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include "misc/texteffects.h"
@@ -20,8 +21,8 @@ void * messageSender(void * sockfd)
 	while (1)
 	{
 		bzero(sendBuffer, MAX);
-		printf("COMM-LINK> ");
-		if(fgets(sendBuffer, MAX, stdin) == NULL)
+		wprintw(stdscr, "COMM-LINK> ");
+		if(wgetnstr(stdscr, sendBuffer, MAX) == ERR)
 		{
 			exit(0);
 		}
@@ -41,9 +42,9 @@ void * messageReceiver(void * sockfd)
 	while (1)
 	{
 		read((long)sockfd, receiveBuffer, MAX);
-		slowPrint("\nUSER-MESSAGE: ", 8000);
-		slowPrint(receiveBuffer, 8000);
-		slowPrint("\nCOMM-LINK (CONT.)> ", 8000);
+		slowPrintNcurses("\nUSER-MESSAGE: ", 8000);
+		slowPrintNcurses(receiveBuffer, 8000);
+		slowPrintNcurses("\nCOMM-LINK (CONT.)> ", 8000);
 		bzero(receiveBuffer, MAX);
 	}
 }
@@ -53,7 +54,6 @@ int main(int argc, char **argv)
 	int sockfd, connfd;
 	struct sockaddr_in servaddr, cli;
 	pthread_t messagingThread;
-	
 	// Give me a socket, and make sure it's working:
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd == -1)
@@ -89,6 +89,11 @@ int main(int argc, char **argv)
 	{
 		slowPrint("Connected to the Silverkin Industries Comm-Link Server:\nHave a pleasant day.\n", 8000);
 	}
+	usleep(100000);
+	
+	// Setup Ncurses:
+	initscr();
+	scrollok(stdscr, true);
 	
 	// Run a thread to send messages, and use main to recieve.
 	pthread_create(&messagingThread, NULL, messageSender, (void *)(long)sockfd);
@@ -96,4 +101,7 @@ int main(int argc, char **argv)
 	
 	// Close the socket.
 	close(sockfd);
+
+	// Unsetup Ncurses:
+	endwin();
 }
