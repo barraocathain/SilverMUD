@@ -29,7 +29,7 @@ int main()
 
 	// Give an intro: Display the Silverkin Industries logo and splash text.
 	slowPrint(logostring, 3000);
-	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.1\n", 5000);
+	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.2\n", 5000);
 	 
 	// Initialize the sockets to 0, so we don't crash.
 	for (int index = 0; index < maxClients; index++)  
