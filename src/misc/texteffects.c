@@ -2,8 +2,9 @@
 // Barry Kane, 2021.
 #include <stdio.h>
 #include <unistd.h>
+#include <ncurses.h>
 
-void slowprint(char * stringToPrint, int delay)
+void slowPrint(char * stringToPrint, int delay)
 {
 	int characterIndex = 0;
 	while(stringToPrint[characterIndex] != '\0')
@@ -14,4 +15,18 @@ void slowprint(char * stringToPrint, int delay)
 		usleep(delay);
 		characterIndex++;
 	}
+}
+
+void slowPrintNcurses(char * stringToPrint, int delay, WINDOW * window)
+{
+	int characterIndex = 0;
+	while(stringToPrint[characterIndex] != '\0')
+	{
+		waddch(window, stringToPrint[characterIndex]);
+		// Refresh the ncurses screen.
+		wrefresh(window);
+		usleep(delay);
+		characterIndex++;
+	}
+	wrefresh(window);
 }

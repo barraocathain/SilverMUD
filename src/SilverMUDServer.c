@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <ncurses.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -27,8 +28,8 @@ int main()
 	struct sockaddr_in serverAddress, clientAddress;	
 
 	// Give an intro: Display the Silverkin Industries logo and splash text.
-	slowprint(logostring, 3000);
-	slowprint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.1\n", 5000);
+	slowPrint(logostring, 3000);
+	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.2\n", 5000);
 	 
 	// Initialize the sockets to 0, so we don't crash.
 	for (int index = 0; index < maxClients; index++)  
@@ -46,7 +47,7 @@ int main()
 
 	else
 	{
-		slowprint(" Socket creation is \033[32;40mGREEN.\033[0m\n", 5000);
+		slowPrint(" Socket creation is \033[32;40mGREEN.\033[0m\n", 5000);
 	}
 
 	bzero(&serverAddress, sizeof(serverAddress));
@@ -64,7 +65,7 @@ int main()
 	}
 	else
 	{
-		slowprint(" Socket binding is \033[32;40mGREEN.\033[0m\n", 5000);
+		slowPrint(" Socket binding is \033[32;40mGREEN.\033[0m\n", 5000);
 	}
 	
 	// Let's start listening:
@@ -75,7 +76,7 @@ int main()
 	}
 	else
 	{
-		slowprint(" Server listening is \033[32;40mGREEN.\033[0m\n", 5000);
+		slowPrint(" Server listening is \033[32;40mGREEN.\033[0m\n", 5000);
 	}
 	length = sizeof(clientAddress);
 
@@ -171,7 +172,7 @@ int main()
 						fflush(stdout);
 						for (int sendIndex = 0; sendIndex < clientsAmount; sendIndex++)
 						{
-							if(sendIndex != i && clientSockets[sendIndex] != STDIN_FILENO && clientSockets[sendIndex] != STDOUT_FILENO && clientSockets[sendIndex] != STDERR_FILENO)
+							if(clientSockets[sendIndex] != STDIN_FILENO && clientSockets[sendIndex] != STDOUT_FILENO && clientSockets[sendIndex] != STDERR_FILENO)
 							{
 								write(clientSockets[sendIndex], receiveBuffer, sizeof(receiveBuffer));
 							}
