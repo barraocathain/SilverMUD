@@ -172,7 +172,7 @@ int main()
 						fflush(stdout);
 						for (int sendIndex = 0; sendIndex < clientsAmount; sendIndex++)
 						{
-							if(sendIndex != i && clientSockets[sendIndex] != STDIN_FILENO && clientSockets[sendIndex] != STDOUT_FILENO && clientSockets[sendIndex] != STDERR_FILENO)
+							if(clientSockets[sendIndex] != STDIN_FILENO && clientSockets[sendIndex] != STDOUT_FILENO && clientSockets[sendIndex] != STDERR_FILENO)
 							{
 								write(clientSockets[sendIndex], receiveBuffer, sizeof(receiveBuffer));
 							}

@@ -17,15 +17,16 @@ void slowPrint(char * stringToPrint, int delay)
 	}
 }
 
-void slowPrintNcurses(char * stringToPrint, int delay)
+void slowPrintNcurses(char * stringToPrint, int delay, WINDOW * window)
 {
 	int characterIndex = 0;
 	while(stringToPrint[characterIndex] != '\0')
 	{
-		addch(stringToPrint[characterIndex]);
+		waddch(window, stringToPrint[characterIndex]);
 		// Refresh the ncurses screen.
-		refresh();
+		wrefresh(window);
 		usleep(delay);
 		characterIndex++;
 	}
+	wrefresh(window);
 }
