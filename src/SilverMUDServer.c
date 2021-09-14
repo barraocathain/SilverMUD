@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include "misc/playerdata.h"
 #include "misc/texteffects.h"
 const int PORT = 5000;
 const int MAX = 1024;
@@ -23,10 +24,18 @@ int main()
 		socketCheck, activityCheck, readLength;
 	int clientSockets[64];
 	int maxClients = 64;
+	userMessage sendBuffer;
 	char receiveBuffer[MAX];
 	fd_set connectedClients;
-	struct sockaddr_in serverAddress, clientAddress;	
+	playerInfo connectedPlayers[64];
+	struct sockaddr_in serverAddress, clientAddress;
 
+	// Initialize playerdata:
+	for (int index = 0; index < maxClients; index++)
+	{
+		strcpy(connectedPlayers[index].playerName, "UNNAMED");
+	}
+			
 	// Give an intro: Display the Silverkin Industries logo and splash text.
 	slowPrint(logostring, 3000);
 	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.2\n", 5000);
@@ -163,21 +172,49 @@ int main()
 						// Close the socket and mark as 0 in list for reuse:
 						close(socketCheck);  
 						clientSockets[i] = 0;  
-					}  
-                     
+					}
+					// Name change command: Move logic to a command interpreter later:
+					else if (receiveBuffer[0] == '/')
+					{
+						char newName[32];
+						if(strncmp(receiveBuffer, "/NAME", 5) == 0)
+						{
+							strncpy(newName, &receiveBuffer[6], 32);
+							// Remove newlines:
+							for (int index = 0; index < 32; index++)
+							{
+								if (newName[index] == '\n')
+								{
+									newName[index] = '\0';
+								}
+							}
+							for (int index = 0; index < maxClients; index++)
+							{
+								if(strncmp(newName, connectedPlayers[index].playerName, 32) == 0)
+								{
+									break;
+								}
+							}
+							strncpy(connectedPlayers[i].playerName, newName, 32);
+						}
+					}
 					// Echo back the message that came in:
 					else 
 					{  
-						printf("%d: %s", clientSockets[i], receiveBuffer);
+						printf("%d/%s: %s", clientSockets[i], connectedPlayers[i].playerName, receiveBuffer);
 						fflush(stdout);
+						strcpy(sendBuffer.senderName, connectedPlayers[i].playerName);
+						strcpy(sendBuffer.messageContent, receiveBuffer);
 						for (int sendIndex = 0; sendIndex < clientsAmount; sendIndex++)
 						{
 							if(clientSockets[sendIndex] != STDIN_FILENO && clientSockets[sendIndex] != STDOUT_FILENO && clientSockets[sendIndex] != STDERR_FILENO)
 							{
-								write(clientSockets[sendIndex], receiveBuffer, sizeof(receiveBuffer));
+								write(clientSockets[sendIndex], sendBuffer.senderName, sizeof(sendBuffer.senderName));
+								write(clientSockets[sendIndex], sendBuffer.messageContent, sizeof(sendBuffer.messageContent));
 							}
 						}
-						bzero(receiveBuffer, sizeof(receiveBuffer));
+						bzero(sendBuffer.senderName, sizeof(sendBuffer.senderName));
+						bzero(sendBuffer.messageContent, sizeof(sendBuffer.messageContent));
 					}  
 				}
 			}
