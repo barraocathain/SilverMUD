@@ -9,6 +9,7 @@
 #include <ncurses.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include "misc/playerdata.h"
 #include "misc/texteffects.h"
 #include "misc/inputhandling.h"
 #define MAX 1024
@@ -61,13 +62,16 @@ void * messageReceiver(void * parameters)
 {
 	// Takes messages from the server and prints them to the chat log window:
 	struct threadparameters *threadParameters = parameters;
-	char receiveBuffer[MAX];
+	userMessage receiveBuffer;
 	while (!shouldExit) 
 	{
-		read(threadParameters->socketDescriptor, receiveBuffer, MAX);
-		slowPrintNcurses("USER-MESSAGE: ", 8000, threadParameters->window);
-		slowPrintNcurses(receiveBuffer, 8000, threadParameters->window);
-		bzero(receiveBuffer, MAX);
+		read(threadParameters->socketDescriptor, &receiveBuffer.senderName, sizeof(receiveBuffer.senderName));
+		read(threadParameters->socketDescriptor, &receiveBuffer.messageContent, sizeof(receiveBuffer.messageContent));
+		slowPrintNcurses(receiveBuffer.senderName, 8000, threadParameters->window);
+		slowPrintNcurses(": ", 8000, threadParameters->window);
+		slowPrintNcurses(receiveBuffer.messageContent, 8000, threadParameters->window);
+		bzero(receiveBuffer.senderName, sizeof(receiveBuffer.senderName));
+		bzero(receiveBuffer.messageContent, sizeof(receiveBuffer.messageContent));
 	}
 	pthread_exit(NULL);
 }
@@ -83,7 +87,7 @@ int main(int argc, char **argv)
 	signal(SIGINT, sigintHandler);
 
 	// Print welcome message:
-	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK CLIENT ====--\nVersion Alpha 0.2\n", 5000);
+	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK CLIENT ====--\nVersion Alpha 0.3\n", 5000);
 	
 	// Give me a socket, and make sure it's working:
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
