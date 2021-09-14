@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 	signal(SIGINT, sigintHandler);
 
 	// Print welcome message:
-	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK CLIENT ====--\nVersion Alpha 0.2\n", 5000);
+	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK CLIENT ====--\nVersion Alpha 0.3\n", 5000);
 	
 	// Give me a socket, and make sure it's working:
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
