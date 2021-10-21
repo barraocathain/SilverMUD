@@ -1,0 +1,8 @@
+* Game Design
+** The gameplay:
+- Each player may travel to areas connected to the current one, depending on flags.
+- Players may perform actions, success depending on their stats.
+- Players may create characters.
+- A GM may create content using GNU Guile.
+* Implementation Plans
+* TODOs

@@ -25,15 +25,28 @@ int main()
 	int clientSockets[64];
 	int maxClients = 64;
 	userMessage sendBuffer;
+	playerArea areaA, areaB;
+	playerPath pathA, pathB;
 	char receiveBuffer[MAX];
 	fd_set connectedClients;
 	playerInfo connectedPlayers[64];
 	struct sockaddr_in serverAddress, clientAddress;
 
-	// Initialize playerdata:
+        // Initialize areas:
+	strncpy(areaA.areaName, "Spawn - North", 32);
+	strncpy(areaB.areaName, "Spawn - South", 32);
+	strncpy(pathA.pathName, "To South Spawn", 32);
+	strncpy(pathB.pathName, "To North Spawn", 32);
+	pathA.areaToJoin = &areaB;
+	pathB.areaToJoin = &areaA;
+	areaA.areaExits[0] = &pathA;
+	areaB.areaExits[0] = &pathB;
+	
+        // Initialize playerdata:
 	for (int index = 0; index < maxClients; index++)
 	{
 		strcpy(connectedPlayers[index].playerName, "UNNAMED");
+		connectedPlayers[index].currentArea = &areaA;
 	}
 			
 	// Give an intro: Display the Silverkin Industries logo and splash text.
@@ -89,7 +102,6 @@ int main()
 	}
 	length = sizeof(clientAddress);
 
-	//connectionFileDesc = accept(socketFileDesc, (sockaddr*)&clientAddress, &length);
 	// Accept the data packet from client and verification
 	while (1)
 	{
@@ -175,10 +187,10 @@ int main()
 					}
 					// Name change command: Move logic to a command interpreter later:
 					else if (receiveBuffer[0] == '/')
-					{
-						char newName[32];
+					{					
 						if(strncmp(receiveBuffer, "/NAME", 5) == 0)
 						{
+							char newName[32];
 							strncpy(newName, &receiveBuffer[6], 32);
 							// Remove newlines:
 							for (int index = 0; index < 32; index++)
@@ -197,17 +209,31 @@ int main()
 							}
 							strncpy(connectedPlayers[i].playerName, newName, 32);
 						}
+                                                else if(strncmp(receiveBuffer, "/MOVE", 5) == 0)
+						{
+							char requestedPath[32];
+							strncpy(requestedPath, &receiveBuffer[6], 32);
+							// Remove newlines:
+							for (int index = 0; index < 32; index++)
+							{
+								if (requestedPath[index] == '\n')
+								{
+									requestedPath[index] = '\0';
+								}
+							}
+							movePlayerToArea(&connectedPlayers[i], requestedPath); 
+						}
 					}
 					// Echo back the message that came in:
 					else 
 					{  
-						printf("%d/%s: %s", clientSockets[i], connectedPlayers[i].playerName, receiveBuffer);
+						printf("%d/%s/%s: %s", clientSockets[i], connectedPlayers[i].currentArea->areaName, connectedPlayers[i].playerName, receiveBuffer);
 						fflush(stdout);
 						strcpy(sendBuffer.senderName, connectedPlayers[i].playerName);
 						strcpy(sendBuffer.messageContent, receiveBuffer);
 						for (int sendIndex = 0; sendIndex < clientsAmount; sendIndex++)
 						{
-							if(clientSockets[sendIndex] != STDIN_FILENO && clientSockets[sendIndex] != STDOUT_FILENO && clientSockets[sendIndex] != STDERR_FILENO)
+							if(clientSockets[sendIndex] != STDIN_FILENO && (connectedPlayers[i].currentArea == connectedPlayers[sendIndex].currentArea))
 							{
 								write(clientSockets[sendIndex], sendBuffer.senderName, sizeof(sendBuffer.senderName));
 								write(clientSockets[sendIndex], sendBuffer.messageContent, sizeof(sendBuffer.messageContent));
