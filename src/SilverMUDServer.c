@@ -14,39 +14,35 @@
 #include <netinet/in.h>
 #include "misc/playerdata.h"
 #include "misc/texteffects.h"
+#include "misc/inputhandling.h"
 const int PORT = 5000;
-const int MAX = 1024;
 typedef struct sockaddr sockaddr;
 	
 int main()
-{
+{ 
 	int socketFileDesc, connectionFileDesc, length, clientsAmount,
 		socketCheck, activityCheck, readLength;
 	int clientSockets[64];
 	int maxClients = 64;
-	userMessage sendBuffer;
-	playerArea areaA, areaB;
-	playerPath pathA, pathB;
-	char receiveBuffer[MAX];
+	userMessage messageBuffer;
+	char receiveBuffer[2048];
 	fd_set connectedClients;
+	playerArea * areaA, * areaB, * areaC;
 	playerInfo connectedPlayers[64];
 	struct sockaddr_in serverAddress, clientAddress;
 
-        // Initialize areas:
-	strncpy(areaA.areaName, "Spawn - North", 32);
-	strncpy(areaB.areaName, "Spawn - South", 32);
-	strncpy(pathA.pathName, "To South Spawn", 32);
-	strncpy(pathB.pathName, "To North Spawn", 32);
-	pathA.areaToJoin = &areaB;
-	pathB.areaToJoin = &areaA;
-	areaA.areaExits[0] = &pathA;
-	areaB.areaExits[0] = &pathB;
+	// Initialize areas:
+	areaA = createArea("Spawn - North", "A large area, mostly empty, as if the designer hadn't bothered to put anything in it, just yet.");
+	areaB = createArea("Spawn - South", "A strange, white void. You feel rather uncomfortable.");
+	areaC = createArea("Temple of Emacs", "A beautifully ornate statue of GNU is above you on a pedestal. Inscribed into the pillar, over and over, is the phrase \"M-x exalt\", in delicate gold letters. You can't help but be awestruck.");
+	createPath(areaA, areaB, "To South Spawn", "To North Spawn");
+  	createPath(areaC, areaB, "Back to South Spawn", "Path to Enlightenment.");
 	
-        // Initialize playerdata:
-	for (int index = 0; index < maxClients; index++)
+	// Initialize playerdata:
+	for (int index = 0; index < maxClients; index++) 
 	{
 		strcpy(connectedPlayers[index].playerName, "UNNAMED");
-		connectedPlayers[index].currentArea = &areaA;
+		connectedPlayers[index].currentArea = areaA;
 	}
 			
 	// Give an intro: Display the Silverkin Industries logo and splash text.
@@ -96,7 +92,7 @@ int main()
 		perror("Server listening is \033[33;40mRED.\033[0m Aborting launch.\n");
 		exit(0);
 	}
-	else
+	else		
 	{
 		slowPrint(" Server listening is \033[32;40mGREEN.\033[0m\n", 5000);
 	}
@@ -130,7 +126,7 @@ int main()
 		activityCheck = select((clientsAmount + 1), &connectedClients, NULL, NULL, NULL);
 
 		// Check if select() worked:
-	        if ((activityCheck < 0) && (errno != EINTR))  
+		if ((activityCheck < 0) && (errno != EINTR))  
 		{ 
 			perror("Error in select(), retrying.\n");  
 		}
@@ -139,7 +135,7 @@ int main()
 		if (FD_ISSET(socketFileDesc, &connectedClients))  
 		{  
 			if ((connectionFileDesc = accept(socketFileDesc, 
-							 (struct sockaddr *)&clientAddress, (socklen_t*)&length))<0)  
+											 (struct sockaddr *)&clientAddress, (socklen_t*)&length))<0)  
 			{  
 				perror("Failed to accept connection. Aborting.\n");  
 				exit(EXIT_FAILURE);  
@@ -147,8 +143,8 @@ int main()
              
 			// Print new connection details:
 			printf("Client connected: Socket file descriptor: #%d, IP address: %s, Port: %d.\n",
-			       connectionFileDesc, inet_ntoa(clientAddress.sin_addr) , ntohs
-			       (clientAddress.sin_port));  
+				   connectionFileDesc, inet_ntoa(clientAddress.sin_addr) , ntohs
+				   (clientAddress.sin_port));  
            
 			// See if we can put in the client:
 			for (int i = 0; i < maxClients; i++)  
@@ -174,17 +170,18 @@ int main()
 					//Check if it was for closing, and also read the incoming message
 					explicit_bzero(receiveBuffer, sizeof(receiveBuffer));
 					readLength = read(socketCheck, receiveBuffer, sizeof(receiveBuffer));
+					userInputSanatize(receiveBuffer, 2048);
 					if (readLength == 0)
 					{
 						// Somebody disconnected , get his details and print:
 						getpeername(socketCheck, (struct sockaddr*)&clientAddress, (socklen_t*)&length);  
 						printf("Client disconnected: IP Address: %s, Port: %d.\n", 
-						       inet_ntoa(clientAddress.sin_addr) , ntohs(clientAddress.sin_port));  
+							   inet_ntoa(clientAddress.sin_addr) , ntohs(clientAddress.sin_port));  
 						
 						// Close the socket and mark as 0 in list for reuse:
 						close(socketCheck);  
-						clientSockets[i] = 0;  
-					}
+						clientSockets[i] = 0;  	
+				}
 					// Name change command: Move logic to a command interpreter later:
 					else if (receiveBuffer[0] == '/')
 					{					
@@ -207,12 +204,33 @@ int main()
 									break;
 								}
 							}
-							strncpy(connectedPlayers[i].playerName, newName, 32);
+							if(newName[0] != '\0')
+							{
+								strncpy(connectedPlayers[i].playerName, newName, 32);
+							}
 						}
-                                                else if(strncmp(receiveBuffer, "/MOVE", 5) == 0)
+						else if(strncmp(receiveBuffer, "/LOOK", 5) == 0)
+						{
+							strcat(messageBuffer.messageContent, connectedPlayers[i].currentArea->areaDescription);
+							strcat(messageBuffer.messageContent, "\nYou see:");		
+							for(int index = 0; index < 16; index++)
+							{								
+								if(connectedPlayers[i].currentArea->areaExits[index] != NULL)
+								{
+									strcat(messageBuffer.messageContent, "\n - ");
+									strcat(messageBuffer.messageContent, connectedPlayers[i].currentArea->areaExits[index]->pathName);
+								}
+							}
+							write(socketCheck, messageBuffer.senderName, sizeof(messageBuffer.senderName));
+							write(socketCheck, messageBuffer.messageContent, sizeof(messageBuffer.messageContent));
+							bzero(messageBuffer.senderName, sizeof(messageBuffer.senderName));
+							bzero(messageBuffer.messageContent, sizeof(messageBuffer.messageContent));
+						}
+						else if(strncmp(receiveBuffer, "/MOVE", 5) == 0)
 						{
 							char requestedPath[32];
 							strncpy(requestedPath, &receiveBuffer[6], 32);
+							userInputSanatize(requestedPath, 32);
 							// Remove newlines:
 							for (int index = 0; index < 32; index++)
 							{
@@ -221,26 +239,46 @@ int main()
 									requestedPath[index] = '\0';
 								}
 							}
-							movePlayerToArea(&connectedPlayers[i], requestedPath); 
+							requestedPath[31] = '\0';
+							if(movePlayerToArea(&connectedPlayers[i], requestedPath) == 0)
+							{
+								strcpy(messageBuffer.senderName, "\0");
+								strcpy(messageBuffer.messageContent, connectedPlayers[i].currentArea->areaDescription);
+								write(socketCheck, messageBuffer.senderName, sizeof(messageBuffer.senderName));
+								write(socketCheck, messageBuffer.messageContent, sizeof(messageBuffer.messageContent));									  
+							}
+							else
+							{
+								strcpy(messageBuffer.senderName, "");
+								strcpy(messageBuffer.messageContent, "You can't go somewhere that doesn't exist!");
+								write(socketCheck, messageBuffer.senderName, sizeof(messageBuffer.senderName));
+								write(socketCheck, messageBuffer.messageContent, sizeof(messageBuffer.messageContent));
+								bzero(messageBuffer.senderName, sizeof(messageBuffer.senderName));
+								bzero(messageBuffer.messageContent, sizeof(messageBuffer.messageContent));
+							}
 						}
 					}
 					// Echo back the message that came in:
+					else if (receiveBuffer[0] == '\n')
+					{
+						continue;
+					}
 					else 
 					{  
 						printf("%d/%s/%s: %s", clientSockets[i], connectedPlayers[i].currentArea->areaName, connectedPlayers[i].playerName, receiveBuffer);
 						fflush(stdout);
-						strcpy(sendBuffer.senderName, connectedPlayers[i].playerName);
-						strcpy(sendBuffer.messageContent, receiveBuffer);
+						strcpy(messageBuffer.senderName, connectedPlayers[i].playerName);
+						strcpy(messageBuffer.messageContent, receiveBuffer);
 						for (int sendIndex = 0; sendIndex < clientsAmount; sendIndex++)
 						{
 							if(clientSockets[sendIndex] != STDIN_FILENO && (connectedPlayers[i].currentArea == connectedPlayers[sendIndex].currentArea))
 							{
-								write(clientSockets[sendIndex], sendBuffer.senderName, sizeof(sendBuffer.senderName));
-								write(clientSockets[sendIndex], sendBuffer.messageContent, sizeof(sendBuffer.messageContent));
+								write(clientSockets[sendIndex], messageBuffer.senderName, sizeof(messageBuffer.senderName));
+								write(clientSockets[sendIndex], messageBuffer.messageContent, sizeof(messageBuffer.messageContent));
 							}
 						}
-						bzero(sendBuffer.senderName, sizeof(sendBuffer.senderName));
-						bzero(sendBuffer.messageContent, sizeof(sendBuffer.messageContent));
+						bzero(messageBuffer.senderName, sizeof(messageBuffer.senderName));
+						bzero(messageBuffer.messageContent, sizeof(messageBuffer.messageContent));
 					}  
 				}
 			}

@@ -12,7 +12,7 @@
 #include "misc/playerdata.h"
 #include "misc/texteffects.h"
 #include "misc/inputhandling.h"
-#define MAX 1024
+#define MAX 2048
 #define PORT 5000
 #define SA struct sockaddr
 
@@ -36,7 +36,6 @@ void * messageSender(void * parameters)
 	// Takes user input in a window, sanatizes it, and sends it to the server:
 	struct threadparameters *threadParameters = parameters;
 	char sendBuffer[MAX];
-	int characterindex;
   
 	while (!shouldExit)
 	{
@@ -47,7 +46,6 @@ void * messageSender(void * parameters)
 			// Quit if there's any funny business with getting input:
 			pthread_exit(NULL);
 		}
-		userInputSanatize(sendBuffer, MAX);
 		if(sendBuffer[0] == '\n')
 		{
 			continue;
@@ -67,9 +65,20 @@ void * messageReceiver(void * parameters)
 	{
 		read(threadParameters->socketDescriptor, &receiveBuffer.senderName, sizeof(receiveBuffer.senderName));
 		read(threadParameters->socketDescriptor, &receiveBuffer.messageContent, sizeof(receiveBuffer.messageContent));
-		slowPrintNcurses(receiveBuffer.senderName, 8000, threadParameters->window);
-		slowPrintNcurses(": ", 8000, threadParameters->window);
-		slowPrintNcurses(receiveBuffer.messageContent, 8000, threadParameters->window);
+
+		if(receiveBuffer.senderName[0] == '\0')
+		{
+			slowPrintNcurses("\n --====<>====-- \n", 8000, threadParameters->window);
+			slowPrintNcurses(receiveBuffer.messageContent, 8000, threadParameters->window);
+			slowPrintNcurses("\n --====<>====-- \n", 8000, threadParameters->window);
+		}
+		else
+		{
+			slowPrintNcurses(receiveBuffer.senderName, 8000, threadParameters->window);
+			slowPrintNcurses(": ", 8000, threadParameters->window);
+			slowPrintNcurses(receiveBuffer.messageContent, 8000, threadParameters->window);
+		}
+
 		bzero(receiveBuffer.senderName, sizeof(receiveBuffer.senderName));
 		bzero(receiveBuffer.messageContent, sizeof(receiveBuffer.messageContent));
 	}
@@ -78,8 +87,8 @@ void * messageReceiver(void * parameters)
 	
 int main(int argc, char **argv)
 {
-	int sockfd, connfd;
-	struct sockaddr_in servaddr, cli;
+	int sockfd;
+	struct sockaddr_in servaddr;
 	pthread_t sendingThread;
 	pthread_t receivingThread;
 	

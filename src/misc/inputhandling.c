@@ -13,4 +13,6 @@ void userInputSanatize(char * inputString, int length)
 			break;
 		}
 	}
+	inputString[length - 1] = '\0';
 }
+

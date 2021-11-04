@@ -1,11 +1,14 @@
 // playerdata.h: Header file containing data structures for player data and function
 // definitions for interacting with said data.
 // Barry Kane, 2021.
+#ifndef PLAYERDATA_H
+#define PLAYERDATA_H
+#include <stdlib.h>
 
 typedef struct userMessage
 {
 	char senderName[32];
-	char messageContent[1024];
+	char messageContent[2048];
 
 } userMessage;
 
@@ -21,7 +24,8 @@ struct playerPath
 struct playerArea
 {
 	char areaName[32];
-        playerPath * areaExits[32];
+	char areaDescription[256];
+	playerPath * areaExits[16];
 };
 
 typedef struct playerInfo
@@ -30,5 +34,13 @@ typedef struct playerInfo
 	playerArea * currentArea;
 } playerInfo;
 
-// Move a player to a different area given a path in the area.
+// Move a player to a different area given a path in the area:
 int movePlayerToArea(playerInfo * player, char * requestedPath);
+
+// Create an area given a name and description:
+playerArea * createArea(char * nameString, char * descriptionString);
+
+// Create a path between two areas given two areas and a string:
+int createPath(playerArea * fromArea, playerArea * toArea, char * pathFromString, char * pathToString);
+
+#endif
