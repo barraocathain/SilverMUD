@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include "misc/lists.h"
 #include "misc/playerdata.h"
 #include "misc/texteffects.h"
 #include "misc/inputhandling.h"
@@ -27,22 +28,21 @@ int main()
 	userMessage messageBuffer;
 	char receiveBuffer[2048];
 	fd_set connectedClients;
-	playerArea * areaA, * areaB, * areaC;
 	playerInfo connectedPlayers[64];
 	struct sockaddr_in serverAddress, clientAddress;
 
 	// Initialize areas:
-	areaA = createArea("Spawn - North", "A large area, mostly empty, as if the designer hadn't bothered to put anything in it, just yet.");
-	areaB = createArea("Spawn - South", "A strange, white void. You feel rather uncomfortable.");
-	areaC = createArea("Temple of Emacs", "A beautifully ornate statue of GNU is above you on a pedestal. Inscribed into the pillar, over and over, is the phrase \"M-x exalt\", in delicate gold letters. You can't help but be awestruck.");
-	createPath(areaA, areaB, "To South Spawn", "To North Spawn");
-  	createPath(areaC, areaB, "Back to South Spawn", "Path to Enlightenment.");
+	areaNode * areas = createAreaList(createArea("Spawn - North", "A large area, mostly empty, as if the designer hadn't bothered to put anything in it, just yet."));
+	addAreaNodeToList(areas, createArea("Spawn - South", "A strange, white void. You feel rather uncomfortable."));
+	addAreaNodeToList(areas, createArea("Temple of Emacs", "A beautifully ornate statue of GNU is above you on a pedestal. Inscribed into the pillar, over and over, is the phrase \"M-x exalt\", in delicate gold letters. You can't help but be awestruck."));
+	createPath(getAreaFromList(areas, 0), getAreaFromList(areas, 1), "To South Spawn", "To North Spawn");
+  	createPath(getAreaFromList(areas, 2), getAreaFromList(areas, 1), "Back to South Spawn", "Path to Enlightenment.");
 	
 	// Initialize playerdata:
 	for (int index = 0; index < maxClients; index++) 
 	{
 		strcpy(connectedPlayers[index].playerName, "UNNAMED");
-		connectedPlayers[index].currentArea = areaA;
+		connectedPlayers[index].currentArea = getAreaFromList(areas, 0);
 	}
 			
 	// Give an intro: Display the Silverkin Industries logo and splash text.

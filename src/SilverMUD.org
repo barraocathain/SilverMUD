@@ -1,8 +1,8 @@
-* Game Design
-** The gameplay:
-- Each player may travel to areas connected to the current one, depending on flags.
-- Players may perform actions, success depending on their stats.
-- Players may create characters.
-- A GM may create content using GNU Guile.
-* Implementation Plans
-* TODOs
+* SilverMUD: An extensible terminal-top role playing game engine
+SilverMUD is a tool for creating engaging and communal stories, all over the
+world through the internet. It's designed to give a game master the same power
+to improvise that they have at the table, through simple programming and
+easy-to-understand structures.
+** Player's Guide
+** Gamemaster's Guide
+** Developer's Guide
