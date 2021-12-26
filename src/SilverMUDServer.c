@@ -31,7 +31,7 @@ int main()
 	playerInfo connectedPlayers[64];
 	struct sockaddr_in serverAddress, clientAddress;
 
-	// Initialize areas:
+	// Initialize areas:	
 	areaNode * areas = createAreaList(createArea("Spawn - North", "A large area, mostly empty, as if the designer hadn't bothered to put anything in it, just yet."));
 	addAreaNodeToList(areas, createArea("Spawn - South", "A strange, white void. You feel rather uncomfortable."));
 	addAreaNodeToList(areas, createArea("Temple of Emacs", "A beautifully ornate statue of GNU is above you on a pedestal. Inscribed into the pillar, over and over, is the phrase \"M-x exalt\", in delicate gold letters. You can't help but be awestruck."));
@@ -98,7 +98,7 @@ int main()
 	}
 	length = sizeof(clientAddress);
 
-	// Accept the data packet from client and verification
+	// Accept the data packet from client and verify it:
 	while (1)
 	{
 		FD_ZERO(&connectedClients);
@@ -134,8 +134,7 @@ int main()
 		// If it's the master socket selected, there is a new connection:
 		if (FD_ISSET(socketFileDesc, &connectedClients))  
 		{  
-			if ((connectionFileDesc = accept(socketFileDesc, 
-											 (struct sockaddr *)&clientAddress, (socklen_t*)&length))<0)  
+			if ((connectionFileDesc = accept(socketFileDesc, (struct sockaddr *)&clientAddress, (socklen_t*)&length))<0)  
 			{  
 				perror("Failed to accept connection. Aborting.\n");  
 				exit(EXIT_FAILURE);  
@@ -181,7 +180,7 @@ int main()
 						// Close the socket and mark as 0 in list for reuse:
 						close(socketCheck);  
 						clientSockets[i] = 0;  	
-				}
+					}
 					// Name change command: Move logic to a command interpreter later:
 					else if (receiveBuffer[0] == '/')
 					{					
@@ -208,6 +207,18 @@ int main()
 							{
 								strncpy(connectedPlayers[i].playerName, newName, 32);
 							}
+						}
+						else if(strncmp(receiveBuffer, "/EXIT", 5) == 0)
+						{
+							strcpy(messageBuffer.senderName, "\0");
+							strcpy(messageBuffer.messageContent, "\0");	   			
+							write(socketCheck, messageBuffer.senderName, sizeof(messageBuffer.senderName));
+							write(socketCheck, messageBuffer.messageContent, sizeof(messageBuffer.messageContent));
+							printf("Client disconnected: IP Address: %s, Port: %d.\n", 
+								   inet_ntoa(clientAddress.sin_addr) , ntohs(clientAddress.sin_port));  
+						
+							close(socketCheck);
+							clientSockets[i] = 0;  	
 						}
 						else if(strncmp(receiveBuffer, "/LOOK", 5) == 0)
 						{

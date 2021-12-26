@@ -1,9 +1,9 @@
 #include <netdb.h>
 #include <stdio.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <signal.h>
 #include <stdbool.h>
 #include <pthread.h>
 #include <ncurses.h>
@@ -20,16 +20,13 @@
 typedef struct threadparameters
 {
 	int socketDescriptor;
+	FILE * loggingstream;
+	bool loggingflag;
 	WINDOW * window;
 } threadparameters;
 
 // A globally availible exit boolean.
 bool shouldExit = false;
-
-void sigintHandler(int signal)
-{
-	shouldExit = true;
-}
 
 void * messageSender(void * parameters)	
 {
@@ -50,8 +47,14 @@ void * messageSender(void * parameters)
 		{
 			continue;
 		}
+		if(threadParameters->loggingflag == true)
+		{
+			fputs(sendBuffer, threadParameters->loggingstream);
+			fputs("\n", threadParameters->loggingstream);
+			fflush(threadParameters->loggingstream);
+		}
 		write(threadParameters->socketDescriptor, sendBuffer, MAX);		
-        }
+	}
 	pthread_exit(NULL);
 }
 
@@ -65,15 +68,26 @@ void * messageReceiver(void * parameters)
 	{
 		read(threadParameters->socketDescriptor, &receiveBuffer.senderName, sizeof(receiveBuffer.senderName));
 		read(threadParameters->socketDescriptor, &receiveBuffer.messageContent, sizeof(receiveBuffer.messageContent));
-
 		if(receiveBuffer.senderName[0] == '\0')
 		{
+			if(receiveBuffer.messageContent[0] == '\0')
+			{
+				shouldExit = true;
+				pthread_exit(NULL);
+			}
 			slowPrintNcurses("\n --====<>====-- \n", 8000, threadParameters->window);
 			slowPrintNcurses(receiveBuffer.messageContent, 8000, threadParameters->window);
 			slowPrintNcurses("\n --====<>====-- \n", 8000, threadParameters->window);
 		}
 		else
 		{
+			if(threadParameters->loggingflag == true)
+			{
+				fputs(receiveBuffer.senderName, threadParameters->loggingstream);
+				fputs(": ", threadParameters->loggingstream);
+				fputs(receiveBuffer.messageContent, threadParameters->loggingstream);
+				fflush(threadParameters->loggingstream);
+			}
 			slowPrintNcurses(receiveBuffer.senderName, 8000, threadParameters->window);
 			slowPrintNcurses(": ", 8000, threadParameters->window);
 			slowPrintNcurses(receiveBuffer.messageContent, 8000, threadParameters->window);
@@ -91,13 +105,63 @@ int main(int argc, char **argv)
 	struct sockaddr_in servaddr;
 	pthread_t sendingThread;
 	pthread_t receivingThread;
-	
-	// Set the SIGINT handler.
-	signal(SIGINT, sigintHandler);
+	int port = 5000;
+	int currentopt = 0;
+	char chatlogpath[PATH_MAX + 1];
+	char gamelogpath[PATH_MAX + 1];
+	char ipaddress[32] = "127.0.0.1";
+	FILE * chatlog = NULL, * gamelog = NULL;
+	bool chatlogging = false, gamelogging = false;
 
 	// Print welcome message:
 	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK CLIENT ====--\nVersion Alpha 0.3\n", 5000);
-	
+
+    // Parse command-line options:
+	while((currentopt = getopt(argc, argv, "i:c:g:p:")) != -1)
+	{
+		switch(currentopt)
+		{
+		case 'i':
+		{
+			strncpy(ipaddress, optarg, 32);
+			break;
+		}
+		case 'c':
+		{
+			strncpy(chatlogpath, optarg, PATH_MAX + 1);
+			chatlog = fopen(chatlogpath, "a+");
+			if(chatlog == NULL)
+			{
+				chatlogging = false;
+			}
+			else
+			{
+				chatlogging = true;
+			}
+			break;
+		}
+		case 'g':
+		{
+			strncpy(gamelogpath, optarg, PATH_MAX + 1);
+			gamelog = fopen(gamelogpath, "a+");
+			if(gamelog == NULL)
+			{
+				gamelogging = false;
+			}
+			else
+			{
+				gamelogging = true;
+			}
+			break;
+		}
+		case '?':
+		{
+			return 1;
+			break;
+		}
+		}
+	}
+
 	// Give me a socket, and make sure it's working:
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd == -1)
@@ -113,15 +177,8 @@ int main(int argc, char **argv)
   
 	// Set our IP Address and port. Default to localhost for testing:
 	servaddr.sin_family = AF_INET;
-	if (argc == 1)
-	{
-		servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	}
-	else
-	{
-		servaddr.sin_addr.s_addr = inet_addr(argv[1]);
-	}
-	servaddr.sin_port = htons(PORT);
+	servaddr.sin_addr.s_addr = inet_addr(ipaddress);
+	servaddr.sin_port = htons(port);
   
 	// Connect the server and client sockets, Kronk:
 	if (connect(sockfd, (SA*)&servaddr, sizeof(servaddr)) != 0)
@@ -148,9 +205,19 @@ int main(int argc, char **argv)
 	// Make the windows for the structs, and pass the socket descriptor:
 	logArea->window = newwin(LINES - 5, COLS - 2, 1, 1);
 	logArea->socketDescriptor = sockfd;
+	logArea->loggingflag = chatlogging;
+	if(chatlog != NULL)
+	{
+		logArea->loggingstream = chatlog;
+	}
 	messageArea->window = newwin(3, COLS, LINES - 3, 0);
 	messageArea->socketDescriptor = sockfd;
-
+	messageArea->loggingflag = gamelogging;
+	if(gamelog != NULL)
+	{
+		messageArea->loggingstream = gamelog;
+	}
+	
 	// Set the two windows to scroll:
 	scrollok(logArea->window, true);
 	scrollok(messageArea->window, true);
@@ -159,15 +226,11 @@ int main(int argc, char **argv)
 	pthread_create(&sendingThread, NULL, messageSender, messageArea);
 	pthread_create(&receivingThread, NULL, messageReceiver, logArea);
 
-	// Wait for SIGINT to change
-	while(!shouldExit)
-	{
-		sleep(250);
-	}
+	// Wait for /EXIT:
+	pthread_join(receivingThread, NULL);
 
 	// Close the threads:
 	pthread_cancel(sendingThread);
-	pthread_cancel(receivingThread);
 	
 	// Close the socket:
 	close(sockfd);
@@ -175,6 +238,16 @@ int main(int argc, char **argv)
 	// Free the structs:
 	free(logArea);
 	free(messageArea);
+
+	// Close the files:
+	if(gamelog != NULL)
+	{
+		fclose(gamelog);
+	}
+	if(chatlog != NULL)
+	{
+		fclose(chatlog);
+	}
 	
 	// Unsetup Ncurses:
 	endwin();
