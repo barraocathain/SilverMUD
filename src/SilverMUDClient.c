@@ -9,17 +9,19 @@
 #include <ncurses.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <gnutls/gnutls.h>
 #include "misc/playerdata.h"
 #include "misc/texteffects.h"
+#include "misc/inputoutput.h"
 #include "misc/inputhandling.h"
-#define MAX 2048
 #define PORT 5000
 #define SA struct sockaddr
+static int MAX = 2048;
 
 // A struct for passing arguments to our threads containing a file descriptor and a window pointer:
 typedef struct threadparameters
 {
-	int socketDescriptor;
+	gnutls_session_t tlssession;
 	FILE * loggingstream;
 	bool loggingflag;
 	WINDOW * window;
@@ -32,28 +34,28 @@ void * messageSender(void * parameters)
 {
 	// Takes user input in a window, sanatizes it, and sends it to the server:
 	struct threadparameters *threadParameters = parameters;
-	char sendBuffer[MAX];
+	userMessage sendBuffer;
   
 	while (!shouldExit)
 	{
-		bzero(sendBuffer, MAX);
 		wprintw(threadParameters->window, "\n\n\nCOMM-LINK> ");
-		if(wgetnstr(threadParameters->window, sendBuffer, MAX) == ERR)
+		if(wgetnstr(threadParameters->window, sendBuffer.messageContent, MAX) == ERR)
 		{
 			// Quit if there's any funny business with getting input:
 			pthread_exit(NULL);
 		}
-		if(sendBuffer[0] == '\n')
+		if(sendBuffer.messageContent[0] == '\n')
 		{
 			continue;
 		}
 		if(threadParameters->loggingflag == true)
 		{
-			fputs(sendBuffer, threadParameters->loggingstream);
+			fputs(sendBuffer.messageContent, threadParameters->loggingstream);
 			fputs("\n", threadParameters->loggingstream);
 			fflush(threadParameters->loggingstream);
 		}
-		write(threadParameters->socketDescriptor, sendBuffer, MAX);		
+		wprintw(threadParameters->window, sendBuffer.messageContent);
+		messageSend(threadParameters->tlssession, &sendBuffer);		
 	}
 	pthread_exit(NULL);
 }
@@ -66,15 +68,14 @@ void * messageReceiver(void * parameters)
 	userMessage receiveBuffer;
 	while (!shouldExit) 
 	{
-		read(threadParameters->socketDescriptor, &receiveBuffer.senderName, sizeof(receiveBuffer.senderName));
-		read(threadParameters->socketDescriptor, &receiveBuffer.messageContent, sizeof(receiveBuffer.messageContent));
+		messageReceive(threadParameters->tlssession, &receiveBuffer);
 		if(receiveBuffer.senderName[0] == '\0')
 		{
-			if(receiveBuffer.messageContent[0] == '\0')
-			{
-				shouldExit = true;
-				pthread_exit(NULL);
-			}
+			//if(receiveBuffer.messageContent[0] == '\0') 
+			//{ 
+			//	shouldExit = true; 
+			//	pthread_exit(NULL); 
+			//} 
 			slowPrintNcurses("\n --====<>====-- \n", 8000, threadParameters->window);
 			slowPrintNcurses(receiveBuffer.messageContent, 8000, threadParameters->window);
 			slowPrintNcurses("\n --====<>====-- \n", 8000, threadParameters->window);
@@ -92,9 +93,6 @@ void * messageReceiver(void * parameters)
 			slowPrintNcurses(": ", 8000, threadParameters->window);
 			slowPrintNcurses(receiveBuffer.messageContent, 8000, threadParameters->window);
 		}
-
-		bzero(receiveBuffer.senderName, sizeof(receiveBuffer.senderName));
-		bzero(receiveBuffer.messageContent, sizeof(receiveBuffer.messageContent));
 	}
 	pthread_exit(NULL);
 }
@@ -191,8 +189,31 @@ int main(int argc, char **argv)
 		slowPrint("Connected to the Silverkin Industries Comm-Link Server:\nHave a pleasant day.\n", 8000);
 	}
 	usleep(100000);
-	
-	// Setup Ncurses:
+
+	/* TODO: Negotiate TLS
+	   Need to pull in GNU TLS, and do the same on the server-side. */
+	// Setup a GnuTLS session and initialize it:
+	gnutls_session_t tlssession = NULL;
+	if(gnutls_init(&tlssession,  GNUTLS_CLIENT) < 0)
+	{
+		// Failure Case
+		exit(EXIT_FAILURE);
+	}
+	gnutls_anon_client_credentials_t clientkey = NULL;
+	gnutls_anon_allocate_client_credentials(&clientkey);
+	gnutls_credentials_set(tlssession, GNUTLS_CRD_ANON, &clientkey);
+	/* Bind the open socket to the TLS session. */
+	gnutls_transport_set_int(tlssession, sockfd);
+	gnutls_priority_set_direct(tlssession, "PERFORMANCE:+ANON-ECDH:+ANON-DH", NULL);
+
+    /* Set default timeout for the handshake. */
+	gnutls_handshake_set_timeout(tlssession, GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
+	int r = -1;
+	do {
+		r = gnutls_handshake(tlssession);
+	} while (r < 0 && gnutls_error_is_fatal(r) == 0);
+
+    // Setup Ncurses:
 	initscr();
 
 	// Create two pointers to structs to pass arguments to the threads:
@@ -204,14 +225,14 @@ int main(int argc, char **argv)
 
 	// Make the windows for the structs, and pass the socket descriptor:
 	logArea->window = newwin(LINES - 5, COLS - 2, 1, 1);
-	logArea->socketDescriptor = sockfd;
+	logArea->tlssession = tlssession;
 	logArea->loggingflag = chatlogging;
 	if(chatlog != NULL)
 	{
 		logArea->loggingstream = chatlog;
 	}
 	messageArea->window = newwin(3, COLS, LINES - 3, 0);
-	messageArea->socketDescriptor = sockfd;
+	messageArea->tlssession = tlssession;
 	messageArea->loggingflag = gamelogging;
 	if(gamelog != NULL)
 	{
@@ -244,7 +265,7 @@ int main(int argc, char **argv)
 	{
 		fclose(gamelog);
 	}
-	if(chatlog != NULL)
+ 	if(chatlog != NULL)
 	{
 		fclose(chatlog);
 	}

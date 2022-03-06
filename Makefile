@@ -5,8 +5,8 @@ clientobj = $(clientsrc:.c=.o)
 serversrc = $(wildcard src/misc/*.c) \
 	    src/SilverMUDServer.c
 serverobj = $(serversrc:.c=.o) 
-CLIENTLDFLAGS= -lpthread -lncurses
-SERVERLDFLAGS= -lncurses
+CLIENTLDFLAGS= -lpthread -lncurses -lgnutls
+SERVERLDFLAGS= -lncurses -lgnutls
 SilverMUDClient: $(clientobj)
 	gcc -s -O3 -o $@ $^ $(CLIENTLDFLAGS)
 

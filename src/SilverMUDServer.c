@@ -12,25 +12,29 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <gnutls/gnutls.h>
 #include "misc/lists.h"
 #include "misc/playerdata.h"
 #include "misc/texteffects.h"
+#include "misc/inputoutput.h"
 #include "misc/inputhandling.h"
+
 const int PORT = 5000;
+const int PLAYERCOUNT = 64;
 typedef struct sockaddr sockaddr;
 	
 int main()
-{ 
+{
+	bool keepRunning = true;
 	int socketFileDesc, connectionFileDesc, length, clientsAmount,
-		socketCheck, activityCheck, readLength;
-	int clientSockets[64];
-	int maxClients = 64;
-	userMessage messageBuffer;
-	char receiveBuffer[2048];
+		socketCheck, activityCheck, readLength, returnVal;
 	fd_set connectedClients;
-	playerInfo connectedPlayers[64];
+	int clientSockets[PLAYERCOUNT];
+	userMessage sendBuffer, receiveBuffer;
+	playerInfo connectedPlayers[PLAYERCOUNT];
+	char testString[32] = "Hehe.";
 	struct sockaddr_in serverAddress, clientAddress;
-
+	
 	// Initialize areas:	
 	areaNode * areas = createAreaList(createArea("Spawn - North", "A large area, mostly empty, as if the designer hadn't bothered to put anything in it, just yet."));
 	addAreaNodeToList(areas, createArea("Spawn - South", "A strange, white void. You feel rather uncomfortable."));
@@ -39,7 +43,7 @@ int main()
   	createPath(getAreaFromList(areas, 2), getAreaFromList(areas, 1), "Back to South Spawn", "Path to Enlightenment.");
 	
 	// Initialize playerdata:
-	for (int index = 0; index < maxClients; index++) 
+	for (int index = 0; index < PLAYERCOUNT; index++) 
 	{
 		strcpy(connectedPlayers[index].playerName, "UNNAMED");
 		connectedPlayers[index].currentArea = getAreaFromList(areas, 0);
@@ -50,7 +54,7 @@ int main()
 	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.3\n", 5000);
 	 
 	// Initialize the sockets to 0, so we don't crash.
-	for (int index = 0; index < maxClients; index++)  
+	for (int index = 0; index < PLAYERCOUNT; index++)  
 	{  
 		clientSockets[index] = 0;  
 	}
@@ -59,13 +63,13 @@ int main()
 	socketFileDesc = socket(AF_INET, SOCK_STREAM, 0);
 	if (socketFileDesc == -1)
 	{
-		perror("Socket creation is \033[33;40mRED.\033[0m Aborting launch.\n");
+		perror("\tSocket Creation is:\t\033[33;40mRED.\033[0m Aborting launch.\n");
 		exit(0);
 	}
 
 	else
 	{
-		slowPrint(" Socket creation is \033[32;40mGREEN.\033[0m\n", 5000);
+		slowPrint("\tSocket Creation is:\t\033[32;40mGREEN.\033[0m\n", 5000);
 	}
 
 	bzero(&serverAddress, sizeof(serverAddress));
@@ -78,37 +82,59 @@ int main()
 	// Binding newly created socket to given IP, and checking it works:
 	if ((bind(socketFileDesc, (sockaddr*)&serverAddress, sizeof(serverAddress))) != 0)
 	{
-		perror("Socket binding is \033[33;40mRED.\033[0m Aborting launch.\n");
+		perror("\tSocket Binding is:\t\033[33;40mRED.\033[0m Aborting launch.\n");
 		exit(0);
 	}
+	
 	else
 	{
-		slowPrint(" Socket binding is \033[32;40mGREEN.\033[0m\n", 5000);
+		slowPrint("\tSocket Binding is:\t\033[32;40mGREEN.\033[0m\n", 5000);
 	}
 	
 	// Let's start listening:
-	if ((listen(socketFileDesc, 64)) != 0)
+	if ((listen(socketFileDesc, PLAYERCOUNT)) != 0)
 	{
-		perror("Server listening is \033[33;40mRED.\033[0m Aborting launch.\n");
-		exit(0);
+		perror("\tServer Listening is:\t\033[33;40mRED.\033[0m Aborting launch.\n");
+		exit(EXIT_FAILURE);
 	}
 	else		
 	{
-		slowPrint(" Server listening is \033[32;40mGREEN.\033[0m\n", 5000);
+		slowPrint("\tServer Listening is:\t\033[32;40mGREEN.\033[0m\n", 5000);
 	}
 	length = sizeof(clientAddress);
 
-	// Accept the data packet from client and verify it:
-	while (1)
+	gnutls_session_t tlssessions[PLAYERCOUNT];
+	gnutls_anon_server_credentials_t serverkey = NULL;
+	gnutls_anon_allocate_server_credentials(&serverkey);
+	gnutls_anon_set_server_known_dh_params(serverkey, GNUTLS_SEC_PARAM_MEDIUM);
+	
+	// Initialize all the TLS Sessions to NULL: We use this to check if it's an "empty connection."
+	for (int index = 0; index < PLAYERCOUNT; index++)  
+	{  
+		tlssessions[index] = NULL;
+		if (gnutls_init(&tlssessions[index], GNUTLS_SERVER) < 0)
+		{
+			perror("\tTLS Sessions Initialization is:\t\033[33;40mRED.\033[0m Aborting launch.\n");
+			exit(EXIT_FAILURE);
+		}
+		gnutls_priority_set_direct(tlssessions[index], "NORMAL:+ANON-ECDH:+ANON-DH", NULL);
+		gnutls_credentials_set(tlssessions[index], GNUTLS_CRD_ANON, &serverkey);
+		gnutls_handshake_set_timeout(tlssessions[index], GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
+	}
+	slowPrint("\tTLS Sessions Initialization is:\t\033[32;40mGREEN.\033[0m\n", 5000);
+
+	while(keepRunning)
 	{
+		// Clear the set of file descriptors and add the master socket:
 		FD_ZERO(&connectedClients);
 		FD_SET(socketFileDesc, &connectedClients);
 		clientsAmount = socketFileDesc;
-		bzero(receiveBuffer, sizeof(receiveBuffer));
-		for (int i = 0; i < maxClients; i++)  
-		{  
+
+		// Find all sockets that are still working and place them in the set:
+		for(int index = 0; index < PLAYERCOUNT; index++)
+		{
 			// Just get the one we're working with to another name:
-			socketCheck = clientSockets[i];  
+			socketCheck = clientSockets[index];  
                  
 			// If it's working, bang it into the list:
 			if(socketCheck > 0)
@@ -134,165 +160,81 @@ int main()
 		// If it's the master socket selected, there is a new connection:
 		if (FD_ISSET(socketFileDesc, &connectedClients))  
 		{  
-			if ((connectionFileDesc = accept(socketFileDesc, (struct sockaddr *)&clientAddress, (socklen_t*)&length))<0)  
+			if ((connectionFileDesc = accept(socketFileDesc, (struct sockaddr *)&clientAddress, (socklen_t*)&length)) < 0)  
 			{  
 				perror("Failed to accept connection. Aborting.\n");  
 				exit(EXIT_FAILURE);  
-			}  
-             
-			// Print new connection details:
-			printf("Client connected: Socket file descriptor: #%d, IP address: %s, Port: %d.\n",
-				   connectionFileDesc, inet_ntoa(clientAddress.sin_addr) , ntohs
-				   (clientAddress.sin_port));  
-           
+			} 
 			// See if we can put in the client:
-			for (int i = 0; i < maxClients; i++)  
+			for (int index = 0; index < PLAYERCOUNT; index++)  
 			{  
 				// When there is an empty slot, pop it in:
-				if( clientSockets[i] == 0 )  
+				if (clientSockets[index] == 0)  
 				{  
-					clientSockets[i] = connectionFileDesc;  
-					printf("Adding to list of sockets as %d.\n" , i);                           
+					clientSockets[index] = connectionFileDesc;  
+					printf("Adding to list of sockets as %d.\n", index);
+					gnutls_transport_set_int(tlssessions[index], clientSockets[index]);
+					do 
+					{
+						returnVal = gnutls_handshake(tlssessions[index]);
+					}
+					while (returnVal < 0 && gnutls_error_is_fatal(returnVal) == 0);
+					strcpy(sendBuffer.senderName, "");
+					strcpy(sendBuffer.messageContent, "Welcome to the server!");
+					messageSend(tlssessions[index], &sendBuffer);
 					break;  
 				}  
 			}  
 		}
+		// Otherwise, it's a client we need to interact with:
 		else
 		{
-			// Otherwise, it's a client socket to be interacted with:
-			for (int i = 0; i < maxClients; i++)  
+			for (int index = 0; index < PLAYERCOUNT; index++)  
 			{  
-				socketCheck = clientSockets[i];  
-                 
-				if (FD_ISSET(socketCheck, &connectedClients))  
-				{  
-					//Check if it was for closing, and also read the incoming message
-					explicit_bzero(receiveBuffer, sizeof(receiveBuffer));
-					readLength = read(socketCheck, receiveBuffer, sizeof(receiveBuffer));
-					userInputSanatize(receiveBuffer, 2048);
-					if (readLength == 0)
+				socketCheck = clientSockets[index];
+
+				if(FD_ISSET(socketCheck, &connectedClients))
+				{
+					messageReceive(tlssessions[index], &receiveBuffer);
+					sprintf(testString, "User %d", index);
+					strcpy(sendBuffer.senderName, testString);
+					userInputSanatize(receiveBuffer.messageContent, sizeof(receiveBuffer.messageContent));
+					strcpy(sendBuffer.messageContent, receiveBuffer.messageContent);
+					for (int sendIndex = 0; sendIndex < clientsAmount; sendIndex++)
 					{
-						// Somebody disconnected , get his details and print:
-						getpeername(socketCheck, (struct sockaddr*)&clientAddress, (socklen_t*)&length);  
-						printf("Client disconnected: IP Address: %s, Port: %d.\n", 
-							   inet_ntoa(clientAddress.sin_addr) , ntohs(clientAddress.sin_port));  
-						
-						// Close the socket and mark as 0 in list for reuse:
-						close(socketCheck);  
-						clientSockets[i] = 0;  	
+						messageSend(tlssessions[sendIndex], &sendBuffer);
 					}
-					// Name change command: Move logic to a command interpreter later:
-					else if (receiveBuffer[0] == '/')
-					{					
-						if(strncmp(receiveBuffer, "/NAME", 5) == 0)
-						{
-							char newName[32];
-							strncpy(newName, &receiveBuffer[6], 32);
-							// Remove newlines:
-							for (int index = 0; index < 32; index++)
-							{
-								if (newName[index] == '\n')
-								{
-									newName[index] = '\0';
-								}
-							}
-							for (int index = 0; index < maxClients; index++)
-							{
-								if(strncmp(newName, connectedPlayers[index].playerName, 32) == 0)
-								{
-									break;
-								}
-							}
-							if(newName[0] != '\0')
-							{
-								strncpy(connectedPlayers[i].playerName, newName, 32);
-							}
-						}
-						else if(strncmp(receiveBuffer, "/EXIT", 5) == 0)
-						{
-							strcpy(messageBuffer.senderName, "\0");
-							strcpy(messageBuffer.messageContent, "\0");	   			
-							write(socketCheck, messageBuffer.senderName, sizeof(messageBuffer.senderName));
-							write(socketCheck, messageBuffer.messageContent, sizeof(messageBuffer.messageContent));
-							printf("Client disconnected: IP Address: %s, Port: %d.\n", 
-								   inet_ntoa(clientAddress.sin_addr) , ntohs(clientAddress.sin_port));  
-						
-							close(socketCheck);
-							clientSockets[i] = 0;  	
-						}
-						else if(strncmp(receiveBuffer, "/LOOK", 5) == 0)
-						{
-							strcat(messageBuffer.messageContent, connectedPlayers[i].currentArea->areaDescription);
-							strcat(messageBuffer.messageContent, "\nYou see:");		
-							for(int index = 0; index < 16; index++)
-							{								
-								if(connectedPlayers[i].currentArea->areaExits[index] != NULL)
-								{
-									strcat(messageBuffer.messageContent, "\n - ");
-									strcat(messageBuffer.messageContent, connectedPlayers[i].currentArea->areaExits[index]->pathName);
-								}
-							}
-							write(socketCheck, messageBuffer.senderName, sizeof(messageBuffer.senderName));
-							write(socketCheck, messageBuffer.messageContent, sizeof(messageBuffer.messageContent));
-							bzero(messageBuffer.senderName, sizeof(messageBuffer.senderName));
-							bzero(messageBuffer.messageContent, sizeof(messageBuffer.messageContent));
-						}
-						else if(strncmp(receiveBuffer, "/MOVE", 5) == 0)
-						{
-							char requestedPath[32];
-							strncpy(requestedPath, &receiveBuffer[6], 32);
-							userInputSanatize(requestedPath, 32);
-							// Remove newlines:
-							for (int index = 0; index < 32; index++)
-							{
-								if (requestedPath[index] == '\n')
-								{
-									requestedPath[index] = '\0';
-								}
-							}
-							requestedPath[31] = '\0';
-							if(movePlayerToArea(&connectedPlayers[i], requestedPath) == 0)
-							{
-								strcpy(messageBuffer.senderName, "\0");
-								strcpy(messageBuffer.messageContent, connectedPlayers[i].currentArea->areaDescription);
-								write(socketCheck, messageBuffer.senderName, sizeof(messageBuffer.senderName));
-								write(socketCheck, messageBuffer.messageContent, sizeof(messageBuffer.messageContent));									  
-							}
-							else
-							{
-								strcpy(messageBuffer.senderName, "");
-								strcpy(messageBuffer.messageContent, "You can't go somewhere that doesn't exist!");
-								write(socketCheck, messageBuffer.senderName, sizeof(messageBuffer.senderName));
-								write(socketCheck, messageBuffer.messageContent, sizeof(messageBuffer.messageContent));
-								bzero(messageBuffer.senderName, sizeof(messageBuffer.senderName));
-								bzero(messageBuffer.messageContent, sizeof(messageBuffer.messageContent));
-							}
-						}
-					}
-					// Echo back the message that came in:
-					else if (receiveBuffer[0] == '\n')
-					{
-						continue;
-					}
-					else 
-					{  
-						printf("%d/%s/%s: %s", clientSockets[i], connectedPlayers[i].currentArea->areaName, connectedPlayers[i].playerName, receiveBuffer);
-						fflush(stdout);
-						strcpy(messageBuffer.senderName, connectedPlayers[i].playerName);
-						strcpy(messageBuffer.messageContent, receiveBuffer);
-						for (int sendIndex = 0; sendIndex < clientsAmount; sendIndex++)
-						{
-							if(clientSockets[sendIndex] != STDIN_FILENO && (connectedPlayers[i].currentArea == connectedPlayers[sendIndex].currentArea))
-							{
-								write(clientSockets[sendIndex], messageBuffer.senderName, sizeof(messageBuffer.senderName));
-								write(clientSockets[sendIndex], messageBuffer.messageContent, sizeof(messageBuffer.messageContent));
-							}
-						}
-						bzero(messageBuffer.senderName, sizeof(messageBuffer.senderName));
-						bzero(messageBuffer.messageContent, sizeof(messageBuffer.messageContent));
-					}  
-				}
+				}			
 			}
-		}
+		}        
 	}
+	/* // TODO: Implement the ability to connect clients, and pass messages to the relevant queues. */
+	/* // Check if there's a new client by checking the master socket: */
+	/* connectionFileDesc = accept(socketFileDesc,(struct sockaddr *)&clientAddress, (socklen_t*)&length); */
+	/* gnutls_transport_set_int(tlssessions[0], connectionFileDesc); */
+	/* int returnVal = -1; */
+	/* do */
+	/* { */
+	/* 	returnVal = gnutls_handshake(tlssessions[0]); */
+	/* } */
+	/* while (returnVal < 0 && gnutls_error_is_fatal(returnVal) == 0); */
+	
+	/* if (returnVal < 0) */
+	/* { */
+	/* 	fprintf(stderr,	"*** Handshake has failed (%s)\n\n", gnutls_strerror(returnVal)); */
+	/* } */
+	/* strcpy(sendBuffer.senderName, "Test"); */
+	/* strcpy(sendBuffer.messageContent, "GnuTLS, baybee!\n"); */
+
+	/* messageSend(tlssessions[0], &sendBuffer); */
+	/* while(true) */
+	/* { */
+	/*     messageReceive(tlssessions[0], &receiveBuffer); */
+	/* 	userInputSanatize(receiveBuffer.messageContent, 2048); */
+	/* 	strcpy(sendBuffer.messageContent, receiveBuffer.messageContent); */
+	/* 	messageSend(tlssessions[0], &sendBuffer); */
+	/* } */
+	/* gnutls_bye(tlssessions[0], GNUTLS_SHUT_RDWR); */
+	return 0;
 }
+

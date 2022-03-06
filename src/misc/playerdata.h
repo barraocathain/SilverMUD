@@ -1,16 +1,9 @@
 // playerdata.h: Header file containing data structures for player data and function
-// definitions for interacting with said data.
+// prototypes for interacting with said data.
 // Barry Kane, 2021.
 #ifndef PLAYERDATA_H
 #define PLAYERDATA_H
 #include <stdlib.h>
-
-typedef struct userMessage
-{
-	char senderName[32];
-	char messageContent[2048];
-
-} userMessage;
 
 typedef struct playerPath playerPath;
 typedef struct playerArea playerArea;
