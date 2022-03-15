@@ -35,18 +35,10 @@ int main()
 	char testString[32] = "Hehe.";
 	struct sockaddr_in serverAddress, clientAddress;
 	
-	// Initialize areas:	
-	areaNode * areas = createAreaList(createArea("Spawn - North", "A large area, mostly empty, as if the designer hadn't bothered to put anything in it, just yet."));
-	addAreaNodeToList(areas, createArea("Spawn - South", "A strange, white void. You feel rather uncomfortable."));
-	addAreaNodeToList(areas, createArea("Temple of Emacs", "A beautifully ornate statue of GNU is above you on a pedestal. Inscribed into the pillar, over and over, is the phrase \"M-x exalt\", in delicate gold letters. You can't help but be awestruck."));
-	createPath(getAreaFromList(areas, 0), getAreaFromList(areas, 1), "To South Spawn", "To North Spawn");
-  	createPath(getAreaFromList(areas, 2), getAreaFromList(areas, 1), "Back to South Spawn", "Path to Enlightenment.");
-	
 	// Initialize playerdata:
 	for (int index = 0; index < PLAYERCOUNT; index++) 
 	{
 		strcpy(connectedPlayers[index].playerName, "UNNAMED");
-		connectedPlayers[index].currentArea = getAreaFromList(areas, 0);
 	}
 			
 	// Give an intro: Display the Silverkin Industries logo and splash text.
@@ -208,33 +200,6 @@ int main()
 			}
 		}        
 	}
-	/* // TODO: Implement the ability to connect clients, and pass messages to the relevant queues. */
-	/* // Check if there's a new client by checking the master socket: */
-	/* connectionFileDesc = accept(socketFileDesc,(struct sockaddr *)&clientAddress, (socklen_t*)&length); */
-	/* gnutls_transport_set_int(tlssessions[0], connectionFileDesc); */
-	/* int returnVal = -1; */
-	/* do */
-	/* { */
-	/* 	returnVal = gnutls_handshake(tlssessions[0]); */
-	/* } */
-	/* while (returnVal < 0 && gnutls_error_is_fatal(returnVal) == 0); */
-	
-	/* if (returnVal < 0) */
-	/* { */
-	/* 	fprintf(stderr,	"*** Handshake has failed (%s)\n\n", gnutls_strerror(returnVal)); */
-	/* } */
-	/* strcpy(sendBuffer.senderName, "Test"); */
-	/* strcpy(sendBuffer.messageContent, "GnuTLS, baybee!\n"); */
-
-	/* messageSend(tlssessions[0], &sendBuffer); */
-	/* while(true) */
-	/* { */
-	/*     messageReceive(tlssessions[0], &receiveBuffer); */
-	/* 	userInputSanatize(receiveBuffer.messageContent, 2048); */
-	/* 	strcpy(sendBuffer.messageContent, receiveBuffer.messageContent); */
-	/* 	messageSend(tlssessions[0], &sendBuffer); */
-	/* } */
-	/* gnutls_bye(tlssessions[0], GNUTLS_SHUT_RDWR); */
 	return 0;
 }
 

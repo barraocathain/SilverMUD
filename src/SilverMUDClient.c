@@ -1,3 +1,6 @@
+// Silverkin Industries Comm-Link Client, Public Demonstration Sample Alpha 0.3.
+// PROJECT CODENAME: WHAT DO I PAY YOU FOR? | Level-3 Clearance.
+// Barry Kane, 2021
 #include <netdb.h>
 #include <stdio.h>
 #include <limits.h>
@@ -14,84 +17,91 @@
 #include "misc/texteffects.h"
 #include "misc/inputoutput.h"
 #include "misc/inputhandling.h"
-#define PORT 5000
-#define SA struct sockaddr
 static int MAX = 2048;
 
 // A struct for passing arguments to our threads containing a file descriptor and a window pointer:
 typedef struct threadparameters
 {
-	gnutls_session_t tlssession;
-	FILE * loggingstream;
-	bool loggingflag;
+	gnutls_session_t tlsSession;
+	FILE * loggingStream;
+	bool loggingFlag;
 	WINDOW * window;
 } threadparameters;
 
-// A globally availible exit boolean.
+// Use sockaddr as a type:
+typedef struct sockaddr sockaddr;
+
+// A globally available exit boolean:
 bool shouldExit = false;
 
 void * messageSender(void * parameters)	
 {
-	// Takes user input in a window, sanatizes it, and sends it to the server:
 	struct threadparameters *threadParameters = parameters;
 	userMessage sendBuffer;
-  
+
+	// Repeatedly get input from the user, place it in a userMessage, and send it to the server:
 	while (!shouldExit)
 	{
+		// Print the prompt:
 		wprintw(threadParameters->window, "\n\n\nCOMM-LINK> ");
-		if(wgetnstr(threadParameters->window, sendBuffer.messageContent, MAX) == ERR)
+		if (wgetnstr(threadParameters->window, sendBuffer.messageContent, MAX) == ERR)
 		{
 			// Quit if there's any funny business with getting input:
 			pthread_exit(NULL);
 		}
-		if(sendBuffer.messageContent[0] == '\n')
+		
+		// Ignore empty messages:
+		if (sendBuffer.messageContent[0] == '\n')
 		{
 			continue;
 		}
-		if(threadParameters->loggingflag == true)
+		
+		// Send the message to the log if logging is enabled:
+		if (threadParameters->loggingFlag == true)
 		{
-			fputs(sendBuffer.messageContent, threadParameters->loggingstream);
-			fputs("\n", threadParameters->loggingstream);
-			fflush(threadParameters->loggingstream);
+			fputs(sendBuffer.messageContent, threadParameters->loggingStream);
+			fputs("\n", threadParameters->loggingStream);
+			fflush(threadParameters->loggingStream);
 		}
-		wprintw(threadParameters->window, sendBuffer.messageContent);
-		messageSend(threadParameters->tlssession, &sendBuffer);		
+
+		// Send the message off to the server:
+		messageSend(threadParameters->tlsSession, &sendBuffer);		
 	}
 	pthread_exit(NULL);
 }
 
-
 void * messageReceiver(void * parameters)
 {
-	// Takes messages from the server and prints them to the chat log window:
 	struct threadparameters *threadParameters = parameters;
 	userMessage receiveBuffer;
+
+	// Repeatedly take messages from the server and print them to the chat log window:
 	while (!shouldExit) 
 	{
-		messageReceive(threadParameters->tlssession, &receiveBuffer);
-		if(receiveBuffer.senderName[0] == '\0')
+		messageReceive(threadParameters->tlsSession, &receiveBuffer);
+		if (receiveBuffer.senderName[0] == '\0')
 		{
-			//if(receiveBuffer.messageContent[0] == '\0') 
-			//{ 
-			//	shouldExit = true; 
-			//	pthread_exit(NULL); 
-			//} 
-			slowPrintNcurses("\n --====<>====-- \n", 8000, threadParameters->window);
-			slowPrintNcurses(receiveBuffer.messageContent, 8000, threadParameters->window);
-			slowPrintNcurses("\n --====<>====-- \n", 8000, threadParameters->window);
+			if (receiveBuffer.messageContent[0] == '\0') 
+			{ 
+				shouldExit = true; 
+				pthread_exit(NULL); 
+			}
+			slowPrintNcurses("\n --====<>====-- \n", 8000, threadParameters->window, true);
+			slowPrintNcurses(receiveBuffer.messageContent, 8000, threadParameters->window, false);
+			slowPrintNcurses("\n --====<>====-- \n", 8000, threadParameters->window, true);
 		}
 		else
 		{
-			if(threadParameters->loggingflag == true)
+			if (threadParameters->loggingFlag == true)
 			{
-				fputs(receiveBuffer.senderName, threadParameters->loggingstream);
-				fputs(": ", threadParameters->loggingstream);
-				fputs(receiveBuffer.messageContent, threadParameters->loggingstream);
-				fflush(threadParameters->loggingstream);
+				fputs(receiveBuffer.senderName, threadParameters->loggingStream);
+				fputs(": ", threadParameters->loggingStream);
+				fputs(receiveBuffer.messageContent, threadParameters->loggingStream);
+				fflush(threadParameters->loggingStream);
 			}
-			slowPrintNcurses(receiveBuffer.senderName, 8000, threadParameters->window);
-			slowPrintNcurses(": ", 8000, threadParameters->window);
-			slowPrintNcurses(receiveBuffer.messageContent, 8000, threadParameters->window);
+			slowPrintNcurses(receiveBuffer.senderName, 8000, threadParameters->window, true);
+			slowPrintNcurses(": ", 8000, threadParameters->window, true);
+			slowPrintNcurses(receiveBuffer.messageContent, 8000, threadParameters->window, false);
 		}
 	}
 	pthread_exit(NULL);
@@ -99,57 +109,68 @@ void * messageReceiver(void * parameters)
 	
 int main(int argc, char **argv)
 {
-	int sockfd;
-	struct sockaddr_in servaddr;
+	int socketFileDesc;
+	struct sockaddr_in serverAddress;
 	pthread_t sendingThread;
 	pthread_t receivingThread;
 	int port = 5000;
 	int currentopt = 0;
-	char chatlogpath[PATH_MAX + 1];
-	char gamelogpath[PATH_MAX + 1];
-	char ipaddress[32] = "127.0.0.1";
-	FILE * chatlog = NULL, * gamelog = NULL;
-	bool chatlogging = false, gamelogging = false;
-
+	int characterDelay = 8000;
+	char chatLogPath[PATH_MAX + 1];
+	char gameLogPath[PATH_MAX + 1];
+	char ipAddress[32] = "127.0.0.1";
+	FILE * chatLog = NULL, * gameLog = NULL;
+	bool chatLogging = false, gameLogging = false;
+	
 	// Print welcome message:
 	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK CLIENT ====--\nVersion Alpha 0.3\n", 5000);
 
     // Parse command-line options:
-	while((currentopt = getopt(argc, argv, "i:c:g:p:")) != -1)
+	while ((currentopt = getopt(argc, argv, "i:c:g:p:d:")) != -1)
 	{
-		switch(currentopt)
+		switch (currentopt)
 		{
 		case 'i':
 		{
-			strncpy(ipaddress, optarg, 32);
+			strncpy(ipAddress, optarg, 32);
 			break;
 		}
 		case 'c':
 		{
-			strncpy(chatlogpath, optarg, PATH_MAX + 1);
-			chatlog = fopen(chatlogpath, "a+");
-			if(chatlog == NULL)
+			strncpy(chatLogPath, optarg, PATH_MAX + 1);
+			chatLog = fopen(chatLogPath, "a+");
+			if (chatLog == NULL)
 			{
-				chatlogging = false;
+				chatLogging = false;
 			}
 			else
 			{
-				chatlogging = true;
+				chatLogging = true;
 			}
 			break;
 		}
 		case 'g':
 		{
-			strncpy(gamelogpath, optarg, PATH_MAX + 1);
-			gamelog = fopen(gamelogpath, "a+");
-			if(gamelog == NULL)
+			strncpy(gameLogPath, optarg, PATH_MAX + 1);
+			gameLog = fopen(gameLogPath, "a+");
+			if (gameLog == NULL)
 			{
-				gamelogging = false;
+				gameLogging = false;
 			}
 			else
 			{
-				gamelogging = true;
+				gameLogging = true;
 			}
+			break;
+		}
+		case 'p':
+		{
+			port = atoi(optarg);
+			break;
+		}
+		case 'd':
+		{
+			characterDelay = atoi(optarg);
 			break;
 		}
 		case '?':
@@ -161,61 +182,66 @@ int main(int argc, char **argv)
 	}
 
 	// Give me a socket, and make sure it's working:
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd == -1)
+	socketFileDesc = socket(AF_INET, SOCK_STREAM, 0);
+	if (socketFileDesc == -1)
 	{
 		printf("Socket creation failed.\n");
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 	else
 	{
-		slowPrint("Socket successfully created.\n", 8000);
+		slowPrint("Socket successfully created.\n", characterDelay);
 	}
-	bzero(&servaddr, sizeof(servaddr));
+	bzero(&serverAddress, sizeof(serverAddress));
   
 	// Set our IP Address and port. Default to localhost for testing:
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = inet_addr(ipaddress);
-	servaddr.sin_port = htons(port);
+	serverAddress.sin_family = AF_INET;
+	serverAddress.sin_addr.s_addr = inet_addr(ipAddress);
+	serverAddress.sin_port = htons(port);
   
 	// Connect the server and client sockets, Kronk:
-	if (connect(sockfd, (SA*)&servaddr, sizeof(servaddr)) != 0)
+	if (connect(socketFileDesc, (sockaddr*)&serverAddress, sizeof(serverAddress)) != 0)
 	{
-		slowPrint("Connection with the Silverkin Industries Comm-Link Server Failed:\nPlease contact your service representative.\n", 8000);
+		slowPrint("Connection with the Silverkin Industries Comm-Link Server Failed:\nPlease contact your service representative.\n", characterDelay);
 		exit(0);
 	}
 	else
 	{
-		slowPrint("Connected to the Silverkin Industries Comm-Link Server:\nHave a pleasant day.\n", 8000);
+		slowPrint("Connected to the Silverkin Industries Comm-Link Server:\nHave a pleasant day.\n", characterDelay);
 	}
 	usleep(100000);
 
-	/* TODO: Negotiate TLS
-	   Need to pull in GNU TLS, and do the same on the server-side. */
 	// Setup a GnuTLS session and initialize it:
-	gnutls_session_t tlssession = NULL;
-	if(gnutls_init(&tlssession,  GNUTLS_CLIENT) < 0)
+	gnutls_session_t tlsSession = NULL;
+	if (gnutls_init(&tlsSession,  GNUTLS_CLIENT) < 0)
 	{
 		// Failure Case
 		exit(EXIT_FAILURE);
 	}
+
+	// Setup the private credentials for our GnuTLS session:
 	gnutls_anon_client_credentials_t clientkey = NULL;
 	gnutls_anon_allocate_client_credentials(&clientkey);
-	gnutls_credentials_set(tlssession, GNUTLS_CRD_ANON, &clientkey);
-	/* Bind the open socket to the TLS session. */
-	gnutls_transport_set_int(tlssession, sockfd);
-	gnutls_priority_set_direct(tlssession, "PERFORMANCE:+ANON-ECDH:+ANON-DH", NULL);
+	gnutls_credentials_set(tlsSession, GNUTLS_CRD_ANON, &clientkey);
 
-    /* Set default timeout for the handshake. */
-	gnutls_handshake_set_timeout(tlssession, GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
-	int r = -1;
-	do {
-		r = gnutls_handshake(tlssession);
-	} while (r < 0 && gnutls_error_is_fatal(r) == 0);
+	// Bind the open socket to the TLS session:
+	gnutls_transport_set_int(tlsSession, socketFileDesc);
+	gnutls_priority_set_direct(tlsSession, "PERFORMANCE:+ANON-ECDH:+ANON-DH", NULL);
+
+    // Use the default for the GnuTLS handshake timeout:
+	gnutls_handshake_set_timeout(tlsSession, GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
+
+	// Repeatedly attempt to handshake unless we encounter a fatal error:
+	int returnValue = -1;
+	do
+	{
+		returnValue = gnutls_handshake(tlsSession);
+	}
+	while (returnValue < 0 && gnutls_error_is_fatal(returnValue) == 0);
 
     // Setup Ncurses:
 	initscr();
-
+	
 	// Create two pointers to structs to pass arguments to the threads:
 	threadparameters * logArea;
 	threadparameters * messageArea;
@@ -225,18 +251,18 @@ int main(int argc, char **argv)
 
 	// Make the windows for the structs, and pass the socket descriptor:
 	logArea->window = newwin(LINES - 5, COLS - 2, 1, 1);
-	logArea->tlssession = tlssession;
-	logArea->loggingflag = chatlogging;
-	if(chatlog != NULL)
+	logArea->tlsSession = tlsSession;
+	logArea->loggingFlag = chatLogging;
+	if (chatLog != NULL)
 	{
-		logArea->loggingstream = chatlog;
+		logArea->loggingStream = chatLog;
 	}
 	messageArea->window = newwin(3, COLS, LINES - 3, 0);
-	messageArea->tlssession = tlssession;
-	messageArea->loggingflag = gamelogging;
-	if(gamelog != NULL)
+	messageArea->tlsSession = tlsSession;
+	messageArea->loggingFlag = gameLogging;
+	if (gameLog != NULL)
 	{
-		messageArea->loggingstream = gamelog;
+		messageArea->loggingStream = gameLog;
 	}
 	
 	// Set the two windows to scroll:
@@ -253,26 +279,27 @@ int main(int argc, char **argv)
 	// Close the threads:
 	pthread_cancel(sendingThread);
 	
-	// Close the socket:
-	close(sockfd);
+	// Close the session and socket:
+	gnutls_bye(tlsSession, GNUTLS_SHUT_RDWR);
+	close(socketFileDesc);
 
 	// Free the structs:
 	free(logArea);
 	free(messageArea);
 
-	// Close the files:
-	if(gamelog != NULL)
+	// Close the log files:
+	if (gameLog != NULL)
 	{
-		fclose(gamelog);
+		fclose(gameLog);
 	}
- 	if(chatlog != NULL)
+ 	if (chatLog != NULL)
 	{
-		fclose(chatlog);
+		fclose(chatLog);
 	}
 	
 	// Unsetup Ncurses:
 	endwin();
 
-	// Say Goodbye:
-	slowPrint("\nThank you for choosing Silverkin Industries, valued customer!\n", 8000);
+	// Say goodbye:
+	slowPrint("\nThank you for choosing Silverkin Industries, valued customer!\n", characterDelay);
 }

@@ -17,9 +17,13 @@ void slowPrint(char * stringToPrint, int delay)
 	}
 }
 
-void slowPrintNcurses(char * stringToPrint, int delay, WINDOW * window)
+void slowPrintNcurses(char * stringToPrint, int delay, WINDOW * window, bool bolded)
 {
 	int characterIndex = 0;
+	if(bolded)
+	{
+		wattron(window, A_BOLD);
+	}
 	while(stringToPrint[characterIndex] != '\0')
 	{
 		waddch(window, stringToPrint[characterIndex]);
@@ -27,6 +31,10 @@ void slowPrintNcurses(char * stringToPrint, int delay, WINDOW * window)
 		wrefresh(window);
 		usleep(delay);
 		characterIndex++;
+	}
+	if(bolded)
+	{
+		wattroff(window, A_BOLD);
 	}
 	wrefresh(window);
 }

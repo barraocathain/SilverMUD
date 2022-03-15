@@ -9,7 +9,7 @@
 void slowPrint(char * stringToPrint, int delay);
 
 // The same, altered to work with Ncurses.
-void slowPrintNcurses(char * stringToPrint, int delay, WINDOW * window);
+void slowPrintNcurses(char * stringToPrint, int delay, WINDOW * window, bool bolded);
 
 // A string containing an ASCII art version of the Silverkin Industries logo.
 char * logostring = "                                                         ///////\n                                 //////////////////////////////////////////\n                   ///////////////////////////////////////////////////////////\n        //////////                                  ////////////////////////////\n   ###   #  #    #     # #####  ###   # #  #  #   #            /////////////////\n  ###    #  #     #   #  ##     #  #  ##   #  ##  #               //////////////\n     ##	 #  #      # #   #      ###   # #  #  # # #                   /////////\n  ####   #  ###     #    #####  #  #  #  # #  #  ##                    ///////\n         #  ##   #  #####   #   #   ### ### ###  # #####  ###          ////// \n         #  # #  #  #    #  #   #  ##    #  #  # # ##    ##             ////\n       	 #  #  # #  #    #  #   #    ##  #  ###	 # #   	   ##	       	//\n         #  #  ###  #####   #####  ###   #  #  # # ####  ###           //\n";
