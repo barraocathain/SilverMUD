@@ -14,31 +14,32 @@
 #include <netinet/in.h>
 #include <gnutls/gnutls.h>
 #include "misc/lists.h"
+#include "misc/constants.h"
 #include "misc/playerdata.h"
 #include "misc/texteffects.h"
 #include "misc/inputoutput.h"
-#include "misc/inputhandling.h"
 
-const int PORT = 5000;
-const int PLAYERCOUNT = 64;
 typedef struct sockaddr sockaddr;
 	
 int main()
 {
 	bool keepRunning = true;
 	int socketFileDesc, connectionFileDesc, length, clientsAmount,
-		socketCheck, activityCheck, readLength, returnVal;
+		socketCheck, activityCheck, returnVal;
 	fd_set connectedClients;
 	int clientSockets[PLAYERCOUNT];
 	userMessage sendBuffer, receiveBuffer;
 	playerInfo connectedPlayers[PLAYERCOUNT];
 	char testString[32] = "Hehe.";
 	struct sockaddr_in serverAddress, clientAddress;
+	inputMessageQueue * inputQueue = createInputMessageQueue();
+	outputMessageQueue * outputQueue = createOutputMessageQueue();
 	
 	// Initialize playerdata:
 	for (int index = 0; index < PLAYERCOUNT; index++) 
 	{
-		strcpy(connectedPlayers[index].playerName, "UNNAMED");
+		sprintf(testString, "UNNAMED %d", index);
+		strcpy(connectedPlayers[index].playerName, testString);
 	}
 			
 	// Give an intro: Display the Silverkin Industries logo and splash text.
@@ -187,18 +188,47 @@ int main()
 
 				if(FD_ISSET(socketCheck, &connectedClients))
 				{
-					messageReceive(tlssessions[index], &receiveBuffer);
-					sprintf(testString, "User %d", index);
-					strcpy(sendBuffer.senderName, testString);
-					userInputSanatize(receiveBuffer.messageContent, sizeof(receiveBuffer.messageContent));
-					strcpy(sendBuffer.messageContent, receiveBuffer.messageContent);
-					for (int sendIndex = 0; sendIndex < clientsAmount; sendIndex++)
+					if(messageReceive(tlssessions[index], &receiveBuffer) == -10)
 					{
-						messageSend(tlssessions[sendIndex], &sendBuffer);
+						gnutls_bye(tlssessions[index], GNUTLS_SHUT_RDWR);
+						gnutls_deinit(tlssessions[index]);
+						shutdown(clientSockets[index], 2);
+						close(clientSockets[index]);
+						clientSockets[index] = 0;
+						tlssessions[index] = NULL;
+						gnutls_init(&tlssessions[index], GNUTLS_SERVER);
+						gnutls_priority_set_direct(tlssessions[index], "NORMAL:+ANON-ECDH:+ANON-DH", NULL);
+						gnutls_credentials_set(tlssessions[index], GNUTLS_CRD_ANON, &serverkey);
+						gnutls_handshake_set_timeout(tlssessions[index], GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
+					}				
+					else
+					{
+						queueInputMessage(inputQueue, receiveBuffer, &connectedPlayers[index]);
 					}
 				}			
 			}
-		}        
+		}
+		// TEMPORARY: MOVE INPUT MESSAGES TO OUTPUT MESSAGES:
+		while(inputQueue->currentLength > 0)
+		{
+			inputMessage * message = peekInputMessage(inputQueue);
+			strncpy(message->content->senderName, message->sender->playerName, 32);
+			userInputSanatize(message->content->messageContent, MAX);
+			if(message->content->messageContent[0] != '\n')
+			{
+				queueOutputMessage(outputQueue, *message->content);
+			}
+			dequeueInputMessage(inputQueue);
+		}
+		while(outputQueue->currentLength > 0)
+		{
+			outputMessage * message = peekOutputMessage(outputQueue);
+			for (int index = 0; index < PLAYERCOUNT; index++)  
+			{
+				messageSend(tlssessions[index], message->content);
+			}
+			dequeueOutputMessage(outputQueue);
+		}
 	}
 	return 0;
 }

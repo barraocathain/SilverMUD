@@ -1,6 +1,6 @@
-* SilverMUD: An extensible terminal-top role playing game engine
+* SilverMUD: The Hackable Terminal-Top Roleplaying Game.
 SilverMUD is a tool for creating engaging and communal stories, all over the
-world through the internet. It's designed to give a game master the same power
+world through the internet. It's designed to give a gamemaster the same power
 to improvise that they have at the table, through simple programming and
 easy-to-understand structures.
 ** Player's Guide

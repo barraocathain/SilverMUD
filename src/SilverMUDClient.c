@@ -13,11 +13,10 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <gnutls/gnutls.h>
+#include "misc/constants.h"
 #include "misc/playerdata.h"
 #include "misc/texteffects.h"
 #include "misc/inputoutput.h"
-#include "misc/inputhandling.h"
-static int MAX = 2048;
 
 // A struct for passing arguments to our threads containing a file descriptor and a window pointer:
 typedef struct threadparameters

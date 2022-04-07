@@ -1,6 +1,5 @@
 // playerdata.h: Header file containing data structures for player data and function
 // prototypes for interacting with said data.
-// Barry Kane, 2021.
 #ifndef PLAYERDATA_H
 #define PLAYERDATA_H
 #include <stdlib.h>
@@ -33,7 +32,7 @@ int movePlayerToArea(playerInfo * player, char * requestedPath);
 // Create an area given a name and description:
 playerArea * createArea(char * nameString, char * descriptionString);
 
-// Create a path between two areas given two areas and a string:
-int createPath(playerArea * fromArea, playerArea * toArea, char * pathFromString, char * pathToString);
+// Create a path between two areas given two areas and two strings:
+int createPath(playerArea * fromArea, playerArea * toArea, char * fromDescription, char * toDescription);
 
 #endif
