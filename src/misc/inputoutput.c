@@ -57,17 +57,21 @@ outputMessageQueue * createOutputMessageQueue(void)
 int queueOutputMessage(outputMessageQueue * queue, userMessage messageToQueue)
 {
 	// Copy the message into a new output message:
-	outputMessage * outputMessage = malloc(sizeof(outputMessage));
+	outputMessage * newOutputMessage = malloc(sizeof(outputMessage));
 
 	// Allocate the internal userMessage to store the message:
-	outputMessage->content = malloc(sizeof(userMessage));
+	newOutputMessage->content = malloc(sizeof(userMessage));
 
+	// Allocate the internal strings to store the message:
+	//outputMessage->content->senderName = malloc(sizeof(char)*32);
+	//outputMessage->content->messageContent = malloc(sizeof(char)*MAX);
+	
 	// Copy the userMessage to the internal userMessage:
-	strncpy(outputMessage->content->senderName, messageToQueue.senderName, 32);
-	strncpy(outputMessage->content->messageContent, messageToQueue.messageContent, MAX);
+	strncpy(newOutputMessage->content->senderName, messageToQueue.senderName, 32);
+	strncpy(newOutputMessage->content->messageContent, messageToQueue.messageContent, MAX);
 
 	// We have no targets, NULL sends to all players in an area:
-	outputMessage->targets[0] = NULL;
+	newOutputMessage->targets[0] = NULL;
 	
 	// Wait for the queue to unlock:
 	while (queue->lock);
@@ -87,24 +91,85 @@ int queueOutputMessage(outputMessageQueue * queue, userMessage messageToQueue)
 		// If the queue is empty, set the first message as both the front and back of the queue:
 		if(queue->front == NULL)
 		{
-			queue->front = outputMessage;
-			queue->back = outputMessage;
+			queue->front = newOutputMessage;
+			queue->back = newOutputMessage;
 			queue->currentLength++;
 			
 			// Unlock the queue:
 			queue->lock = false;
-
 			return 0;
 		}
 		else
 		{
-			queue->back->next = outputMessage;
-			queue->back = outputMessage;
+			queue->back->next = newOutputMessage;
+			queue->back = newOutputMessage;
 			queue->currentLength++;
 
             // Unlock the queue:
 			queue->lock = false;
+			return 0;
+		}
+	}
+}
 
+int queueTargetedOutputMessage(outputMessageQueue * queue,
+							   userMessage *  messageToQueue, playerInfo ** targets, int numberOfTargets)
+{
+	// Copy the message into a new output message:
+	outputMessage * newOutputMessage = malloc(sizeof(outputMessage));
+
+	// Allocate the internal userMessage to store the message:
+	newOutputMessage->content = malloc(sizeof(userMessage));
+
+	// Set the appropriate recipients:
+	for(int index = 0; index < numberOfTargets && index < PLAYERCOUNT; index++)
+	{
+		newOutputMessage->targets[index] = targets[index];
+	}
+	for(int index = numberOfTargets; index < PLAYERCOUNT; index++)
+	{
+		newOutputMessage->targets[index] = NULL;
+	}
+	
+	// Copy the userMessage to the internal userMessage:
+	strncpy(newOutputMessage->content->senderName, messageToQueue->senderName, 32);
+	strncpy(newOutputMessage->content->messageContent, messageToQueue->messageContent, MAX);
+	
+	
+	// Wait for the queue to unlock:
+	while (queue->lock);
+
+	// Lock the queue:
+	queue->lock = true;
+
+	// Check that we're not overflowing the queue:
+	if ((queue->currentLength + 1) > MAXQUEUELENGTH)
+	{
+		// Unlock the queue:
+		queue->lock = false;
+		return -1;
+	}
+	else
+	{
+		// If the queue is empty, set the first message as both the front and back of the queue:
+		if(queue->front == NULL)
+		{
+			queue->front = newOutputMessage;
+			queue->back = newOutputMessage;
+			queue->currentLength++;
+			
+			// Unlock the queue:
+			queue->lock = false;
+			return 0;
+		}
+		else
+		{
+			queue->back->next = newOutputMessage;
+			queue->back = newOutputMessage;
+			queue->currentLength++;
+
+            // Unlock the queue:
+			queue->lock = false;
 			return 0;
 		}
 	}
@@ -213,8 +278,8 @@ int queueInputMessage(inputMessageQueue * queue, userMessage messageToQueue, pla
 	strncpy(inputMessage->content->messageContent, messageToQueue.messageContent, MAX);
 
 	// We have no targets, NULL sends to all players in an area:
-	inputMessage->sender = sendingPlayer;
-	
+	inputMessage->sender = sendingPlayer;	
+
 	// Wait for the queue to unlock:
 	while (queue->lock);
 

@@ -8,12 +8,14 @@
 #include <string.h>
 #include <unistd.h>
 #include <ncurses.h>
+#include <pthread.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <gnutls/gnutls.h>
 #include "misc/lists.h"
+#include "misc/gamelogic.h"
 #include "misc/constants.h"
 #include "misc/playerdata.h"
 #include "misc/texteffects.h"
@@ -27,6 +29,7 @@ int main()
 	int socketFileDesc, connectionFileDesc, length, clientsAmount,
 		socketCheck, activityCheck, returnVal;
 	fd_set connectedClients;
+	pthread_t gameLogicThread;
 	int clientSockets[PLAYERCOUNT];
 	userMessage sendBuffer, receiveBuffer;
 	playerInfo connectedPlayers[PLAYERCOUNT];
@@ -34,14 +37,22 @@ int main()
 	struct sockaddr_in serverAddress, clientAddress;
 	inputMessageQueue * inputQueue = createInputMessageQueue();
 	outputMessageQueue * outputQueue = createOutputMessageQueue();
+
+	// Initialize test areas:
+	areaNode * areas = createAreaList(createArea("Spawn - North", "A large area, mostly empty, as if the designer hadn't bothered to put anything in it, just yet."));
+	addAreaNodeToList(areas, createArea("Spawn - South", "A strange, white void. You feel rather uncomfortable."));
+	addAreaNodeToList(areas, createArea("Temple of Emacs", "A beautifully ornate statue of GNU is above you on a pedestal. Inscribed into the pillar, over and over, is the phrase \"M-x exalt\", in delicate gold letters. You can't help but be awestruck."));
+	createPath(getAreaFromList(areas, 0), getAreaFromList(areas, 1), "To South Spawn", "To North Spawn");
+  	createPath(getAreaFromList(areas, 2), getAreaFromList(areas, 1), "Back to South Spawn", "Path to Enlightenment.");
 	
 	// Initialize playerdata:
 	for (int index = 0; index < PLAYERCOUNT; index++) 
 	{
 		sprintf(testString, "UNNAMED %d", index);
 		strcpy(connectedPlayers[index].playerName, testString);
+		connectedPlayers[index].currentArea = getAreaFromList(areas, 0);
 	}
-			
+	
 	// Give an intro: Display the Silverkin Industries logo and splash text.
 	slowPrint(logostring, 3000);
 	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.3\n", 5000);
@@ -116,6 +127,16 @@ int main()
 	}
 	slowPrint("\tTLS Sessions Initialization is:\t\033[32;40mGREEN.\033[0m\n", 5000);
 
+	// Prepare the game logic thread:
+	gameLogicParameters * gameLogicThreadParameters = malloc(sizeof(gameLogicParameters));
+	gameLogicThreadParameters->connectedPlayers = connectedPlayers;
+	gameLogicThreadParameters->playerCount = &clientsAmount;
+	gameLogicThreadParameters->outputQueue = outputQueue;
+	gameLogicThreadParameters->inputQueue = inputQueue;
+	pthread_create(&gameLogicThread, NULL, &gameLogicLoop, gameLogicThreadParameters);
+
+	struct timeval timeout = {0, 500};
+	
 	while(keepRunning)
 	{
 		// Clear the set of file descriptors and add the master socket:
@@ -142,7 +163,7 @@ int main()
 		}
 
 		// See if a connection is ready to be interacted with:
-		activityCheck = select((clientsAmount + 1), &connectedClients, NULL, NULL, NULL);
+		activityCheck = select((clientsAmount + 1), &connectedClients, NULL, NULL, &timeout);
 
 		// Check if select() worked:
 		if ((activityCheck < 0) && (errno != EINTR))  
@@ -188,9 +209,10 @@ int main()
 
 				if(FD_ISSET(socketCheck, &connectedClients))
 				{
-					if(messageReceive(tlssessions[index], &receiveBuffer) == -10)
+					int returnVal = messageReceive(tlssessions[index], &receiveBuffer);
+					if(returnVal == -10 || returnVal == 0)
 					{
-						gnutls_bye(tlssessions[index], GNUTLS_SHUT_RDWR);
+						gnutls_bye(tlssessions[index], GNUTLS_SHUT_WR);
 						gnutls_deinit(tlssessions[index]);
 						shutdown(clientSockets[index], 2);
 						close(clientSockets[index]);
@@ -209,23 +231,46 @@ int main()
 			}
 		}
 		// TEMPORARY: MOVE INPUT MESSAGES TO OUTPUT MESSAGES:
-		while(inputQueue->currentLength > 0)
+		/* while(inputQueue->currentLength > 0) */
+		/* { */
+ 		/* 	inputMessage * message = peekInputMessage(inputQueue); */
+		/* 	strncpy(message->content->senderName, message->sender->playerName, 32); */
+		/* 	userInputSanatize(message->content->messageContent, MAX); */
+		/* 	if(message->content->messageContent[0] != '\n') */
+		/* 	{ */
+		/* 		queueOutputMessage(outputQueue, *message->content); */
+		/* 	} */
+		/* 	dequeueInputMessage(inputQueue); */
+		/* } */
+
+		while(outputQueue->currentLength != 0)
 		{
-			inputMessage * message = peekInputMessage(inputQueue);
-			strncpy(message->content->senderName, message->sender->playerName, 32);
-			userInputSanatize(message->content->messageContent, MAX);
-			if(message->content->messageContent[0] != '\n')
-			{
-				queueOutputMessage(outputQueue, *message->content);
-			}
-			dequeueInputMessage(inputQueue);
-		}
-		while(outputQueue->currentLength > 0)
-		{
+			while(outputQueue->lock);
+			outputQueue->lock = true;
 			outputMessage * message = peekOutputMessage(outputQueue);
-			for (int index = 0; index < PLAYERCOUNT; index++)  
+			outputQueue->lock = false;
+			if(message->targets[0] == NULL)
 			{
-				messageSend(tlssessions[index], message->content);
+				for (int index = 0; index < PLAYERCOUNT; index++)  
+				{
+					messageSend(tlssessions[index], message->content);
+				}
+			}
+			else
+			{
+				int targetIndex = 0;
+				for(int index = 0; index < PLAYERCOUNT; index++)
+				{
+					if(message->targets[targetIndex] == NULL)
+					{
+						break;
+					}
+					if(&connectedPlayers[index] == message->targets[targetIndex])
+					{
+						targetIndex++;
+						messageSend(tlssessions[index], message->content);
+					}
+				}
 			}
 			dequeueOutputMessage(outputQueue);
 		}

@@ -17,9 +17,9 @@ typedef struct userMessage
 	char messageContent[MAX];
 } userMessage;
 
-// =================
-// -=[Message I/O]=-
-// =================
+// ==================
+// -=[Message I/O]=-:
+// ==================
 
 // Sends a message to a given TLS session, wraps the calls to gnutls_write:
 int messageSend(gnutls_session_t receivingSession, userMessage * messageToSend);
@@ -52,8 +52,8 @@ outputMessageQueue * createOutputMessageQueue(void);
 
 // Enqueue a userMessage to an outputMessageQueue:
 int queueOutputMessage(outputMessageQueue * queue, userMessage messageToQueue);
-// int queueOutputMessage(outputMessageQueue * queue, userMessage *  messageToQueue,
-//                        playerInfo * targets, int numberOfTargets);
+int queueTargetedOutputMessage(outputMessageQueue * queue, userMessage *  messageToQueue,
+							   playerInfo ** targets, int numberOfTargets);
 
 // Dequeue the front outputMessage from an outputMessageQueue:
 int dequeueOutputMessage(outputMessageQueue * queue);
@@ -93,9 +93,9 @@ int dequeueInputMessage(inputMessageQueue * queue);
 // Return the front inputMessage from an inputMessageQueue:
 inputMessage * peekInputMessage(inputMessageQueue * queue);
 
-// ======================
-// -=[Input Sanitation]=-
-// ======================
+// =======================
+// -=[Input Sanitation]=-:
+// =======================
 
 // Sanatize user input to ensure it's okay to send to the server:
 void userInputSanatize(char * inputString, int length);

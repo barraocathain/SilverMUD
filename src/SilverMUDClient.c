@@ -279,7 +279,7 @@ int main(int argc, char **argv)
 	pthread_cancel(sendingThread);
 	
 	// Close the session and socket:
-	gnutls_bye(tlsSession, GNUTLS_SHUT_RDWR);
+	gnutls_bye(tlsSession, GNUTLS_SHUT_WR);
 	close(socketFileDesc);
 
 	// Free the structs:
@@ -302,3 +302,4 @@ int main(int argc, char **argv)
 	// Say goodbye:
 	slowPrint("\nThank you for choosing Silverkin Industries, valued customer!\n", characterDelay);
 }
+
