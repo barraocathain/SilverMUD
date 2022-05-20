@@ -14,12 +14,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <gnutls/gnutls.h>
-#include "misc/lists.h"
-#include "misc/gamelogic.h"
-#include "misc/constants.h"
-#include "misc/playerdata.h"
-#include "misc/texteffects.h"
-#include "misc/inputoutput.h"
+#include "../../include/lists.h"
+#include "../../include/gamelogic.h"
+#include "../../include/constants.h"
+#include "../../include/playerdata.h"
+#include "../../include/texteffects.h"
+#include "../../include/inputoutput.h"
 
 typedef struct sockaddr sockaddr;
 	

@@ -13,10 +13,10 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <gnutls/gnutls.h>
-#include "misc/constants.h"
-#include "misc/playerdata.h"
-#include "misc/texteffects.h"
-#include "misc/inputoutput.h"
+#include "../../include/constants.h"
+#include "../../include/playerdata.h"
+#include "../../include/texteffects.h"
+#include "../../include/inputoutput.h"
 
 // A struct for passing arguments to our threads containing a file descriptor and a window pointer:
 typedef struct threadparameters
@@ -85,7 +85,8 @@ void * messageReceiver(void * parameters)
 				shouldExit = true; 
 				pthread_exit(NULL); 
 			}
-			slowPrintNcurses("\n --====<>====-- \n", 8000, threadParameters->window, true);
+			slowPrintNcurses("\n --====<", 8000, threadParameters->window, true);
+			slowPrintNcurses(">====-- \n", 8000, threadParameters->window, true);
 			slowPrintNcurses(receiveBuffer.messageContent, 8000, threadParameters->window, false);
 			slowPrintNcurses("\n --====<>====-- \n", 8000, threadParameters->window, true);
 		}

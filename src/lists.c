@@ -1,7 +1,7 @@
 // Implementation of lists library for SilverMUD.
 // Barry Kane, 2021
-#include "lists.h"
-#include "playerdata.h"
+#include "../include/lists.h"
+#include "../include/playerdata.h"
 
 areaNode * createAreaList(playerArea * initialArea)
 {

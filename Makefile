@@ -1,9 +1,9 @@
 CC = gcc
-clientsrc = $(wildcard src/misc/*.c) \
-	    src/SilverMUDClient.c
+clientsrc = $(wildcard src/*.c) \
+	    src/client/SilverMUDClient.c
 clientobj = $(clientsrc:.c=.o) 
-serversrc = $(wildcard src/misc/*.c) \
-	    src/SilverMUDServer.c
+serversrc = $(wildcard src/*.c) \
+	    src/server/SilverMUDServer.c
 serverobj = $(serversrc:.c=.o) 
 CLIENTLDFLAGS= -lpthread -lncurses -lgnutls
 SERVERLDFLAGS= -lpthread -lncurses -lgnutls 

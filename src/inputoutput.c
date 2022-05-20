@@ -4,11 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h> 
-#include "constants.h"
-#include "playerdata.h"
-#include "inputoutput.h"
+#include <stdbool.h>
 #include <gnutls/gnutls.h>
+#include "../include/constants.h"
+#include "../include/playerdata.h"
+#include "../include/inputoutput.h"
 
 // Sends a message to a given TLS session, wraps the calls to gnutls_write:
 int messageSend(gnutls_session_t receivingSession, userMessage * messageToSend)
