@@ -1,7 +1,7 @@
 // Implementation of lists library for SilverMUD.
 // Barry Kane, 2021
-#include "../include/lists.h"
-#include "../include/playerdata.h"
+#include "lists.h"
+#include "playerdata.h"
 
 areaNode * createAreaList(playerArea * initialArea)
 {
@@ -33,7 +33,7 @@ int addAreaNodeToList(areaNode * toList, playerArea * areaToAdd)
 	current->next = malloc(sizeof(areaNode));
 	current->next->prev = current;
 	current->next->data = areaToAdd;
-	current->next->next = NULL;
+   	current->next->next = NULL;
 }
 
 int deleteAreaNodeFromList(areaNode * fromList, playerArea * areaToDelete)
@@ -61,7 +61,7 @@ int addPathNodeToList(pathNode * toList, playerPath * pathToAdd)
 	current = toList;
 	while(current->next != NULL)
 	{
-		current = current->next;
+ 		current = current->next;
 	}
 	current->next = malloc(sizeof(pathNode));
 	current->next->prev = current;

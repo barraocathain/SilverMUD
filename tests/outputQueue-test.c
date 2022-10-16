@@ -1,4 +1,4 @@
-#include "../misc/inputoutput.h"
+#include "../src/inputoutput.h"
 #include <stdio.h>
 #include <string.h>
 int main()

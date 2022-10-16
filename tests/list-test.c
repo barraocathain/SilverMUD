@@ -1,5 +1,5 @@
-#include "../misc/lists.h"
-#include "../misc/playerdata.h"
+#include "../src/lists.h"
+#include "../src/playerdata.h"
 #include <stdio.h>
 
 void main()

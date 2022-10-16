@@ -6,9 +6,9 @@
 #include <string.h>
 #include <stdbool.h>
 #include <gnutls/gnutls.h>
-#include "../include/constants.h"
-#include "../include/playerdata.h"
-#include "../include/inputoutput.h"
+#include "constants.h"
+#include "playerdata.h"
+#include "inputoutput.h"
 
 // Sends a message to a given TLS session, wraps the calls to gnutls_write:
 int messageSend(gnutls_session_t receivingSession, userMessage * messageToSend)
@@ -34,7 +34,7 @@ int messageReceive(gnutls_session_t receiveFromSession, userMessage * receiveToM
 	do
 	{
 		returnValue = gnutls_record_recv(receiveFromSession, receiveToMessage->senderName,
-										 sizeof(((userMessage*)0)->senderName));
+										sizeof(((userMessage*)0)->senderName));
 	}  while (returnValue == GNUTLS_E_AGAIN || returnValue == GNUTLS_E_INTERRUPTED);
 	do
 	{
@@ -313,7 +313,7 @@ int queueInputMessage(inputMessageQueue * queue, userMessage messageToQueue, pla
 			queue->back = inputMessage;
 			queue->currentLength++;
 
-            // Unlock the queue:
+			// Unlock the queue:
 			queue->lock = false;
 
 			return 0;
@@ -329,6 +329,19 @@ void userInputSanatize(char * inputString, int length)
 		{
 			inputString[index] = '\n';
 			inputString[index + 1] = '\0';
+			break;
+		}
+	}
+	inputString[length - 1] = '\0';
+}
+
+void userNameSanatize(char * inputString, int length)
+{
+	for(int index = 0; index <= length; index++)
+	{
+		if(!isprint(inputString[index]))
+		{
+			inputString[index] = '\0';
 			break;
 		}
 	}

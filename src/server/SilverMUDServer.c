@@ -1,6 +1,7 @@
 // Silverkin Industries Comm-Link Server, Engineering Sample Alpha 0.3.
 // PROJECT CODENAME: WHAT DO I PAY YOU FOR? | Level-3 Clearance.
 // Barry Kane, 2021
+#include <time.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <errno.h>
@@ -14,17 +15,19 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <gnutls/gnutls.h>
-#include "../../include/lists.h"
-#include "../../include/gamelogic.h"
-#include "../../include/constants.h"
-#include "../../include/playerdata.h"
-#include "../../include/texteffects.h"
-#include "../../include/inputoutput.h"
+
+#include "../lists.h"
+#include "../gamelogic.h"
+#include "../constants.h"
+#include "../playerdata.h"
+#include "../texteffects.h"
+#include "../inputoutput.h"
 
 typedef struct sockaddr sockaddr;
 	
 int main()
 {
+	time_t currentTime;
 	bool keepRunning = true;
 	int socketFileDesc, connectionFileDesc, length, clientsAmount,
 		socketCheck, activityCheck, returnVal;
@@ -38,25 +41,61 @@ int main()
 	inputMessageQueue * inputQueue = createInputMessageQueue();
 	outputMessageQueue * outputQueue = createOutputMessageQueue();
 
+	// -==[ TEST GAME-STATE INITIALIZATION ]==-
 	// Initialize test areas:
-	areaNode * areas = createAreaList(createArea("Spawn - North", "A large area, mostly empty, as if the designer hadn't bothered to put anything in it, just yet."));
-	addAreaNodeToList(areas, createArea("Spawn - South", "A strange, white void. You feel rather uncomfortable."));
-	addAreaNodeToList(areas, createArea("Temple of Emacs", "A beautifully ornate statue of GNU is above you on a pedestal. Inscribed into the pillar, over and over, is the phrase \"M-x exalt\", in delicate gold letters. You can't help but be awestruck."));
-	createPath(getAreaFromList(areas, 0), getAreaFromList(areas, 1), "To South Spawn", "To North Spawn");
-  	createPath(getAreaFromList(areas, 2), getAreaFromList(areas, 1), "Back to South Spawn", "Path to Enlightenment.");
+	areaNode * areas = createAreaList(createArea("Login Area", "Please login with the /join command."));
+	addAreaNodeToList(areas, createArea("Temple Entrance",
+										"You are standing outside a large, elaborate temple, of white marble and delicate construction. "
+										"Etched onto the left pillar next to the large opening is the same symbol, over and over again, a gentle curve with it's ends pointing to the right. "
+										"A similar symbol is on the right pillar, but it's ends are pointing to the left. "));
+	
+	addAreaNodeToList(areas, createArea("The Hall of Documentation",
+										"Just past the threshold of the entrance lies a large hall, with bookshelves lining the walls, ceiling to floor. "
+										"The shelves are filled to the brim with finely-bound books, each with titles in silver lettering on the spine. "
+										"There are countless books, but you notice a large lectern in the center of the room, and a path leading upwards at the back. "));
+	
+	addAreaNodeToList(areas, createArea("Monument to GNU",
+										"A beautifully ornate statue of GNU is above you on a pedestal. "
+										"Inscribed into the pillar, over and over, is the phrase \"M-x exalt\", in delicate gold letters. "
+										"You can't help but be awestruck."));
+	// Initialize test paths:
+	createPath(getAreaFromList(areas, 1), getAreaFromList(areas, 2), "Go inside the temple.", "Leave the temple.");
+  	createPath(getAreaFromList(areas, 3), getAreaFromList(areas, 2), "Back to the Hall of Documentation.", "Path to Enlightenment.");
+	skillList * globalSkillList = malloc(sizeof(skillList));
+	globalSkillList->head = NULL;
+
+	// Create a few basic skills:
+	createSkill(globalSkillList, "Medicine", 8, true);
+	createSkill(globalSkillList, "Lockpicking", 12, true);
+	createSkill(globalSkillList, "Programming", 12, true);
+	createSkill(globalSkillList, "Sensor Reading", 14, false);
+	createSkill(globalSkillList, "Starship Piloting", 17, true);
+	createSkill(globalSkillList, "Mechanical Repair", 17, true);
 	
 	// Initialize playerdata:
 	for (int index = 0; index < PLAYERCOUNT; index++) 
 	{
 		sprintf(testString, "UNNAMED %d", index);
+		// OH NO IT'S NOT MEMORY SAFE BETTER REWRITE IT IN RUST
+		// But wait, we know the string won't be too big, so it's fine.
 		strcpy(connectedPlayers[index].playerName, testString);
 		connectedPlayers[index].currentArea = getAreaFromList(areas, 0);
+		connectedPlayers[index].stats = calloc(1, sizeof(statBlock));
+		connectedPlayers[index].stats->specPoints = 30;
+		connectedPlayers[index].stats->skillPoints = 30;
+		connectedPlayers[index].skills = calloc(1, sizeof(skillList));
+		connectedPlayers[index].skills->head = NULL;
 	}
+
+	// -==[ TEST GAME-STATE INITIALIZATION END ]==-
 	
 	// Give an intro: Display the Silverkin Industries logo and splash text.
 	slowPrint(logostring, 3000);
 	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.3\n", 5000);
-	 
+
+	// Seed random number generator from the current time:
+	srandom((unsigned) time(&currentTime));
+	
 	// Initialize the sockets to 0, so we don't crash.
 	for (int index = 0; index < PLAYERCOUNT; index++)  
 	{  
@@ -67,7 +106,7 @@ int main()
 	socketFileDesc = socket(AF_INET, SOCK_STREAM, 0);
 	if (socketFileDesc == -1)
 	{
-		perror("\tSocket Creation is:\t\033[33;40mRED.\033[0m Aborting launch.\n");
+		fprintf(stderr, "\tSocket Creation is:\t\033[33;40mRED.\033[0m Aborting launch.\n");
 		exit(0);
 	}
 
@@ -75,7 +114,7 @@ int main()
 	{
 		slowPrint("\tSocket Creation is:\t\033[32;40mGREEN.\033[0m\n", 5000);
 	}
-
+  
 	bzero(&serverAddress, sizeof(serverAddress));
   
 	// Assign IP and port:
@@ -86,7 +125,7 @@ int main()
 	// Binding newly created socket to given IP, and checking it works:
 	if ((bind(socketFileDesc, (sockaddr*)&serverAddress, sizeof(serverAddress))) != 0)
 	{
-		perror("\tSocket Binding is:\t\033[33;40mRED.\033[0m Aborting launch.\n");
+		fprintf(stderr, "\tSocket Binding is:\t\033[33;40mRED.\033[0m Aborting launch.\n");
 		exit(0);
 	}
 	
@@ -98,48 +137,53 @@ int main()
 	// Let's start listening:
 	if ((listen(socketFileDesc, PLAYERCOUNT)) != 0)
 	{
-		perror("\tServer Listening is:\t\033[33;40mRED.\033[0m Aborting launch.\n");
+		fprintf(stderr, "\tServer Listener is:\t\033[33;40mRED.\033[0m Aborting launch.\n");
 		exit(EXIT_FAILURE);
 	}
 	else		
 	{
-		slowPrint("\tServer Listening is:\t\033[32;40mGREEN.\033[0m\n", 5000);
+		slowPrint("\tServer Listener is:\t\033[32;40mGREEN.\033[0m\n", 5000);
 	}
 	length = sizeof(clientAddress);
 
+	// Declare the needed variables for TLS sessions:
 	gnutls_session_t tlssessions[PLAYERCOUNT];
 	gnutls_anon_server_credentials_t serverkey = NULL;
 	gnutls_anon_allocate_server_credentials(&serverkey);
 	gnutls_anon_set_server_known_dh_params(serverkey, GNUTLS_SEC_PARAM_MEDIUM);
 	
-	// Initialize all the TLS Sessions to NULL: We use this to check if it's an "empty connection."
+	// Initialize all the TLS sessions to NULL: We use this to check if it's an "empty connection."
 	for (int index = 0; index < PLAYERCOUNT; index++)  
 	{  
 		tlssessions[index] = NULL;
 		if (gnutls_init(&tlssessions[index], GNUTLS_SERVER) < 0)
 		{
-			perror("\tTLS Sessions Initialization is:\t\033[33;40mRED.\033[0m Aborting launch.\n");
+			fprintf(stderr, "\tTLS Sessions Initialization is:\t\033[33;40mRED.\033[0m Aborting launch.\n");
 			exit(EXIT_FAILURE);
 		}
 		gnutls_priority_set_direct(tlssessions[index], "NORMAL:+ANON-ECDH:+ANON-DH", NULL);
 		gnutls_credentials_set(tlssessions[index], GNUTLS_CRD_ANON, &serverkey);
 		gnutls_handshake_set_timeout(tlssessions[index], GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
-	}
-	slowPrint("\tTLS Sessions Initialization is:\t\033[32;40mGREEN.\033[0m\n", 5000);
+  	}
+	slowPrint("\tTLS Preparation is:\t\033[32;40mGREEN.\033[0m\n", 5000);
 
 	// Prepare the game logic thread:
 	gameLogicParameters * gameLogicThreadParameters = malloc(sizeof(gameLogicParameters));
 	gameLogicThreadParameters->connectedPlayers = connectedPlayers;
 	gameLogicThreadParameters->playerCount = &clientsAmount;
+	gameLogicThreadParameters->globalSkillList = globalSkillList;
 	gameLogicThreadParameters->outputQueue = outputQueue;
 	gameLogicThreadParameters->inputQueue = inputQueue;
+	gameLogicThreadParameters->areaList = areas;
 	pthread_create(&gameLogicThread, NULL, &gameLogicLoop, gameLogicThreadParameters);
 
+	slowPrint("\tEvent Thread is:\t\033[32;40mGREEN.\033[0m\n", 5000);
+	slowPrint("=====\n", 5000); 
 	struct timeval timeout = {0, 500};
 	
 	while(keepRunning)
 	{
-		// Clear the set of file descriptors and add the master socket:
+		// Clear the set of file descriptors angad add the master socket:
 		FD_ZERO(&connectedClients);
 		FD_SET(socketFileDesc, &connectedClients);
 		clientsAmount = socketFileDesc;
@@ -168,7 +212,7 @@ int main()
 		// Check if select() worked:
 		if ((activityCheck < 0) && (errno != EINTR))  
 		{ 
-			perror("Error in select(), retrying.\n");  
+			fprintf(stderr, "Error in select(), retrying.\n");  
 		}
 
 		// If it's the master socket selected, there is a new connection:
@@ -176,7 +220,7 @@ int main()
 		{  
 			if ((connectionFileDesc = accept(socketFileDesc, (struct sockaddr *)&clientAddress, (socklen_t*)&length)) < 0)  
 			{  
-				perror("Failed to accept connection. Aborting.\n");  
+				fprintf(stderr, "Failed to accept connection. Aborting.\n");  
 				exit(EXIT_FAILURE);  
 			} 
 			// See if we can put in the client:
@@ -193,9 +237,13 @@ int main()
 						returnVal = gnutls_handshake(tlssessions[index]);
 					}
 					while (returnVal < 0 && gnutls_error_is_fatal(returnVal) == 0);
+					
+					// Send a greeting message:
 					strcpy(sendBuffer.senderName, "");
 					strcpy(sendBuffer.messageContent, "Welcome to the server!");
 					messageSend(tlssessions[index], &sendBuffer);
+					strcpy(receiveBuffer.messageContent, "/look");
+					queueInputMessage(inputQueue, receiveBuffer, &connectedPlayers[index]);
 					break;  
 				}  
 			}  
@@ -210,45 +258,46 @@ int main()
 				if(FD_ISSET(socketCheck, &connectedClients))
 				{
 					int returnVal = messageReceive(tlssessions[index], &receiveBuffer);
+					// If player has disconnected:
 					if(returnVal == -10 || returnVal == 0)
 					{
+						// Close the session:
 						gnutls_bye(tlssessions[index], GNUTLS_SHUT_WR);
 						gnutls_deinit(tlssessions[index]);
 						shutdown(clientSockets[index], 2);
 						close(clientSockets[index]);
 						clientSockets[index] = 0;
 						tlssessions[index] = NULL;
+
+						// Clear out the old player state so that a new one may join:
+						sprintf(testString, "UNNAMED %d", index);
+						strcpy(connectedPlayers[index].playerName, testString);
+						connectedPlayers[index].currentArea = getAreaFromList(areas, 0);
+
+						// Prepare a fresh SSL session for the next new player:
 						gnutls_init(&tlssessions[index], GNUTLS_SERVER);
 						gnutls_priority_set_direct(tlssessions[index], "NORMAL:+ANON-ECDH:+ANON-DH", NULL);
 						gnutls_credentials_set(tlssessions[index], GNUTLS_CRD_ANON, &serverkey);
 						gnutls_handshake_set_timeout(tlssessions[index], GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
-					}				
-					else
+					}
+					// Otherwise, they've sent a message:
+					else 
 					{
 						queueInputMessage(inputQueue, receiveBuffer, &connectedPlayers[index]);
 					}
 				}			
 			}
 		}
-		// TEMPORARY: MOVE INPUT MESSAGES TO OUTPUT MESSAGES:
-		/* while(inputQueue->currentLength > 0) */
-		/* { */
- 		/* 	inputMessage * message = peekInputMessage(inputQueue); */
-		/* 	strncpy(message->content->senderName, message->sender->playerName, 32); */
-		/* 	userInputSanatize(message->content->messageContent, MAX); */
-		/* 	if(message->content->messageContent[0] != '\n') */
-		/* 	{ */
-		/* 		queueOutputMessage(outputQueue, *message->content); */
-		/* 	} */
-		/* 	dequeueInputMessage(inputQueue); */
-		/* } */
 
+		// Run through the output queue and send all unused messages:
 		while(outputQueue->currentLength != 0)
 		{
 			while(outputQueue->lock);
 			outputQueue->lock = true;
 			outputMessage * message = peekOutputMessage(outputQueue);
 			outputQueue->lock = false;
+			
+			// If the first target is set to NULL, it's intended for all connected:
 			if(message->targets[0] == NULL)
 			{
 				for (int index = 0; index < PLAYERCOUNT; index++)  

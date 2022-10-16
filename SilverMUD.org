@@ -4,5 +4,25 @@ world through the internet. It's designed to give a gamemaster the same power
 to improvise that they have at the table, through simple programming and
 easy-to-understand structures.
 ** Player's Guide
+*** The Basic Commands
+SilverMUD is played through a set of very simple commands. To use a command,
+type a forward-slash (/) followed immediately by the command name. The command
+can be upper or lower-case.
+
+| Command | Arguments                                         | Effect                                                             |
+|---------+---------------------------------------------------+--------------------------------------------------------------------|
+| JOIN    | Takes a character name                            | Logs you into the server with the given character name.            |
+| MOVE    | Takes a path name or a path number                | Moves you down the given path.                                     |
+| LOOK    | None                                              | Gives you a description of what's around you, and what you can do. |
+| STAT    | None                                              | Displays your current status and character sheet.                  |
+| SPEC    | Core stat name                                    | Allows you to apply spec points to a given stat.                   |
+| TRY     | Core stat name or skill name and an object number | Attempt to use the given stat or skill on the object.              |
+
 ** Gamemaster's Guide
+*** Running the Server:
+
 ** Developer's Guide
+*** Build Prerequisites:
+SilverMUD has the following dependencies:
+- GnuTLS
+- ncurses

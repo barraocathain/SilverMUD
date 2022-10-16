@@ -12,7 +12,7 @@
 
 // A message datastructure containing a user/character name and the content:
 typedef struct userMessage
-{
+{	
 	char senderName[32];
 	char messageContent[MAX];
 } userMessage;
@@ -99,6 +99,9 @@ inputMessage * peekInputMessage(inputMessageQueue * queue);
 
 // Sanatize user input to ensure it's okay to send to the server:
 void userInputSanatize(char * inputString, int length);
+
+// Sanatize user names so they display correctly;
+void userNameSanatize(char * inputString, int length);
 
 #endif
 

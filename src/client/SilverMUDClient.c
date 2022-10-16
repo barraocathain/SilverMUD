@@ -13,12 +13,12 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <gnutls/gnutls.h>
-#include "../../include/constants.h"
-#include "../../include/playerdata.h"
-#include "../../include/texteffects.h"
-#include "../../include/inputoutput.h"
+#include "../constants.h"
+#include "../playerdata.h"
+#include "../texteffects.h"
+#include "../inputoutput.h"
 
-// A struct for passing arguments to our threads containing a file descriptor and a window pointer:
+// A struct for bundling all needed paramaters for a thread so we can pass them using a void pointer:
 typedef struct threadparameters
 {
 	gnutls_session_t tlsSession;
@@ -72,26 +72,37 @@ void * messageSender(void * parameters)
 void * messageReceiver(void * parameters)
 {
 	struct threadparameters *threadParameters = parameters;
+	bool serverMessage = false;
 	userMessage receiveBuffer;
-
+	int screenWidth = getmaxx(threadParameters->window);
+	
 	// Repeatedly take messages from the server and print them to the chat log window:
 	while (!shouldExit) 
 	{
 		messageReceive(threadParameters->tlsSession, &receiveBuffer);
 		if (receiveBuffer.senderName[0] == '\0')
 		{
+			wrapString(receiveBuffer.messageContent,
+					   strlen(receiveBuffer.messageContent) - 1, screenWidth);
 			if (receiveBuffer.messageContent[0] == '\0') 
 			{ 
 				shouldExit = true; 
 				pthread_exit(NULL); 
 			}
-			slowPrintNcurses("\n --====<", 8000, threadParameters->window, true);
-			slowPrintNcurses(">====-- \n", 8000, threadParameters->window, true);
-			slowPrintNcurses(receiveBuffer.messageContent, 8000, threadParameters->window, false);
-			slowPrintNcurses("\n --====<>====-- \n", 8000, threadParameters->window, true);
+			if(serverMessage == false)
+			{
+				slowPrintNcurses("\n --====<>====--", 4000, threadParameters->window, true);
+				serverMessage = true;
+			}
+			slowPrintNcurses("\n", 4000, threadParameters->window, true);
+			slowPrintNcurses(receiveBuffer.messageContent, 4000, threadParameters->window, false);
+			slowPrintNcurses("\n", 4000, threadParameters->window, true);
 		}
 		else
 		{
+			wrapString(receiveBuffer.messageContent,
+					   strlen(receiveBuffer.messageContent) - 1,
+					   screenWidth - strlen(receiveBuffer.senderName) - 2);
 			if (threadParameters->loggingFlag == true)
 			{
 				fputs(receiveBuffer.senderName, threadParameters->loggingStream);
@@ -99,9 +110,14 @@ void * messageReceiver(void * parameters)
 				fputs(receiveBuffer.messageContent, threadParameters->loggingStream);
 				fflush(threadParameters->loggingStream);
 			}
-			slowPrintNcurses(receiveBuffer.senderName, 8000, threadParameters->window, true);
-			slowPrintNcurses(": ", 8000, threadParameters->window, true);
-			slowPrintNcurses(receiveBuffer.messageContent, 8000, threadParameters->window, false);
+			if(serverMessage == true)
+			{
+				slowPrintNcurses("\n --====<>====-- \n", 4000, threadParameters->window, true);
+				serverMessage = false;
+			}
+			slowPrintNcurses(receiveBuffer.senderName, 4000, threadParameters->window, true);
+			slowPrintNcurses(": ", 4000, threadParameters->window, true);
+			slowPrintNcurses(receiveBuffer.messageContent, 4000, threadParameters->window, false);
 		}
 	}
 	pthread_exit(NULL);
@@ -115,7 +131,7 @@ int main(int argc, char **argv)
 	pthread_t receivingThread;
 	int port = 5000;
 	int currentopt = 0;
-	int characterDelay = 8000;
+	int characterDelay = 4000;
 	char chatLogPath[PATH_MAX + 1];
 	char gameLogPath[PATH_MAX + 1];
 	char ipAddress[32] = "127.0.0.1";
@@ -248,7 +264,7 @@ int main(int argc, char **argv)
 	
 	logArea = malloc(sizeof(*logArea));
 	messageArea = malloc(sizeof(*messageArea));
-
+	
 	// Make the windows for the structs, and pass the socket descriptor:
 	logArea->window = newwin(LINES - 5, COLS - 2, 1, 1);
 	logArea->tlsSession = tlsSession;
@@ -257,7 +273,7 @@ int main(int argc, char **argv)
 	{
 		logArea->loggingStream = chatLog;
 	}
-	messageArea->window = newwin(3, COLS, LINES - 3, 0);
+	messageArea->window = newwin(3, COLS - 2, LINES - 4, 1);
 	messageArea->tlsSession = tlsSession;
 	messageArea->loggingFlag = gameLogging;
 	if (gameLog != NULL)
@@ -269,7 +285,7 @@ int main(int argc, char **argv)
 	scrollok(logArea->window, true);
 	scrollok(messageArea->window, true);
 	
-	// Run a thread to send messages, and use main to recieve:
+	// Run a thread to send messages, and use another to recieve:
 	pthread_create(&sendingThread, NULL, messageSender, messageArea);
 	pthread_create(&receivingThread, NULL, messageReceiver, logArea);
 
