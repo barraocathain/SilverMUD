@@ -16,7 +16,7 @@
 #include <netinet/in.h>
 #include <gnutls/gnutls.h>
 
-#include "../lists.h"
+#include "../areadata.h"
 #include "../gamelogic.h"
 #include "../constants.h"
 #include "../playerdata.h"
@@ -94,7 +94,7 @@ int main()
 	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.3\n", 5000);
 
 	// Seed random number generator from the current time:
-	srandom((unsigned) time(&currentTime));
+	srandom((unsigned)time(&currentTime));
 	
 	// Initialize the sockets to 0, so we don't crash.
 	for (int index = 0; index < PLAYERCOUNT; index++)  
@@ -114,7 +114,8 @@ int main()
 	{
 		slowPrint("\tSocket Creation is:\t\033[32;40mGREEN.\033[0m\n", 5000);
 	}
-  
+
+	// 
 	bzero(&serverAddress, sizeof(serverAddress));
   
 	// Assign IP and port:

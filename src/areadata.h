@@ -1,7 +1,7 @@
-// lists.h: A header file for the lists library for SilverMUD.
-// Barry Kane, 2021.
-#ifndef LISTS_H
-#define LISTS_H
+// areadata.h: Contains data structures and functions for playerAreas and playerPaths in SilverMUD:
+// Barra Ó Catháin, 2022.
+#ifndef AREADATA_H
+#define AREADATA_H
 #include "playerdata.h"
 
 typedef struct areaNode areaNode;

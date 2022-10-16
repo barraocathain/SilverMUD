@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <gnutls/gnutls.h>
+
 #include "../constants.h"
 #include "../playerdata.h"
 #include "../texteffects.h"
@@ -66,21 +67,29 @@ void * messageSender(void * parameters)
 		// Send the message off to the server:
 		messageSend(threadParameters->tlsSession, &sendBuffer);		
 	}
+
+	// Rejoin the main thread:
 	pthread_exit(NULL);
 }
 
 void * messageReceiver(void * parameters)
 {
-	struct threadparameters *threadParameters = parameters;
-	bool serverMessage = false;
+	int returnValue = 0;
 	userMessage receiveBuffer;
+	bool serverMessage = false;
+	struct threadparameters *threadParameters = parameters;
 	int screenWidth = getmaxx(threadParameters->window);
 	
 	// Repeatedly take messages from the server and print them to the chat log window:
 	while (!shouldExit) 
 	{
-		messageReceive(threadParameters->tlsSession, &receiveBuffer);
-		if (receiveBuffer.senderName[0] == '\0')
+		returnValue = messageReceive(threadParameters->tlsSession, &receiveBuffer);
+		// Check we haven't been disconnected:
+		if(returnValue == -10 || returnValue == 0)
+		{
+			shouldExit = true;
+		}
+		else if (receiveBuffer.senderName[0] == '\0')
 		{
 			wrapString(receiveBuffer.messageContent,
 					   strlen(receiveBuffer.messageContent) - 1, screenWidth);
@@ -123,7 +132,7 @@ void * messageReceiver(void * parameters)
 	pthread_exit(NULL);
 }
 	
-int main(int argc, char **argv)
+int main(int argc, char ** argv)
 {
 	int socketFileDesc;
 	struct sockaddr_in serverAddress;
@@ -276,6 +285,8 @@ int main(int argc, char **argv)
 	messageArea->window = newwin(3, COLS - 2, LINES - 4, 1);
 	messageArea->tlsSession = tlsSession;
 	messageArea->loggingFlag = gameLogging;
+
+	// Set the appropriate log pointers:
 	if (gameLog != NULL)
 	{
 		messageArea->loggingStream = gameLog;

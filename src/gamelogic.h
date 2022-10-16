@@ -3,7 +3,7 @@
 // Barry Kane, 2022.
 #ifndef GAMELOGIC_H
 #define GAMELOGIC_H
-#include "lists.h"
+#include "areadata.h"
 #include "constants.h"
 #include "playerdata.h"
 #include "inputoutput.h"

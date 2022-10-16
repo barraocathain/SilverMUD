@@ -1,6 +1,6 @@
-// Implementation of lists library for SilverMUD.
-// Barry Kane, 2021
-#include "lists.h"
+// areadata.c: Implements functions for playerAreas and playerPaths in SilverMUD:
+// Barra Ó Catháin, 2022.
+#include "areadata.h"
 #include "playerdata.h"
 
 areaNode * createAreaList(playerArea * initialArea)
