@@ -8,22 +8,22 @@ serverobj = $(serversrc:.c=.o)
 CLIENTLDFLAGS= -lpthread -lncurses -lgnutls
 SERVERLDFLAGS= -lpthread -lncurses -lgnutls 
 SilverMUDClient: $(clientobj)
-	gcc -s -O3 -o $@ $^ $(CLIENTLDFLAGS)
+	gcc  -o $@ $^ $(CLIENTLDFLAGS)
 
 SilverMUDServer: $(serverobj)
-	gcc -s -O3 -o $@ $^ $(SERVERLDFLAGS)
+	gcc  -o $@ $^ $(SERVERLDFLAGS)
 
 SilverMUDClientDebug: $(clientobj)
-	gcc -ggdb -Wall $^ $(CLIENTLDFLAGS) -o $@
+	gcc  $^ $(CLIENTLDFLAGS) -o $@
 
 SilverMUDServerDebug: $(serverobj)
-	gcc -ggdb -Wall $^ $(SERVERLDFLAGS) -o $@
+	gcc  $^ $(SERVERLDFLAGS) -o $@
 
 .PHONY: clean
 clean:
 	rm -f $(clientobj) $(serverobj) SilverMUDClient SilverMUDServer SilverMUDClientDebug SilverMUDServerDebug
 
 all: SilverMUDClient SilverMUDServer
-
-debug: CFLAGS += -Wall -ggdb -Wextra
-debug: SilverMUDClientDebug SilverMUDServerDebug
+all: CFLAGS += -Wall -Wextra -Ofast
+debug: CFLAGS += -Wall -ggdb -Wextra -Og -pg
+debug: clean SilverMUDClientDebug SilverMUDServerDebug

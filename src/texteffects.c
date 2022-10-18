@@ -40,7 +40,25 @@ void slowPrintNcurses(char * stringToPrint, int delay, WINDOW * window, bool bol
 	wrefresh(window);
 }
 
-void bruteForcePrintNcurses(char * stringToPrint, int delay, WINDOW * window, bool bolded)
+void bruteforcePrint(char * stringToPrint, int delay)
+{
+	unsigned int characterIndex = 0;
+	while(stringToPrint[characterIndex] != '\0')
+	{
+		for(unsigned char currentCharacter = 32; currentCharacter <= stringToPrint[characterIndex]; currentCharacter++)
+		{
+			putchar(stringToPrint[currentCharacter]);
+			fflush(stdout);
+			usleep(delay);
+			putchar(8);
+			fflush(stdout);
+		}
+		putchar(stringToPrint[characterIndex]);
+		characterIndex++;
+	}
+}
+
+void bruteforcePrintNcurses(char * stringToPrint, int delay, WINDOW * window, bool bolded)
 {
 	int characterIndex = 0;
 	if(bolded)

@@ -34,6 +34,7 @@ int addAreaNodeToList(areaNode * toList, playerArea * areaToAdd)
 	current->next->prev = current;
 	current->next->data = areaToAdd;
    	current->next->next = NULL;
+	return 0;
 }
 
 int deleteAreaNodeFromList(areaNode * fromList, playerArea * areaToDelete)
@@ -53,6 +54,7 @@ int deleteAreaNodeFromList(areaNode * fromList, playerArea * areaToDelete)
 		current->next->prev = current->prev;
 	}
 	free(current);
+	return 0;
 }
 
 int addPathNodeToList(pathNode * toList, playerPath * pathToAdd)
@@ -67,6 +69,7 @@ int addPathNodeToList(pathNode * toList, playerPath * pathToAdd)
 	current->next->prev = current;
 	current->next->data = pathToAdd;
 	current->next->next = NULL;
+	return 0;
 }
 
 int deletePathNodeFromList(pathNode * fromList, playerPath * pathToDelete)
@@ -86,6 +89,7 @@ int deletePathNodeFromList(pathNode * fromList, playerPath * pathToDelete)
 		current->next->prev = current->prev;
 	}
 	free(current);
+	return 0;
 }
 
 areaNode * getAreaNode(areaNode * fromList, int listIndex)

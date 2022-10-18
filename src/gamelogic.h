@@ -86,4 +86,7 @@ typedef enum outcome
 // Run a stat check:
 outcome statCheck(playerInfo * player, int chance, coreStat statToCheck);
 
+// Run a skill check:
+// outcome skillCheck(playerInfo * player, int chance, char * skillToCheck, int skillNameLength);
+
 #endif
