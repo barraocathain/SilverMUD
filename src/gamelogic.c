@@ -708,3 +708,37 @@ outcome statCheck(playerInfo * player, int chance, coreStat statToCheck)
 	}
 }
 
+// Move a player to a different area given a path in the area:
+int movePlayerToArea(playerInfo * player, char * requestedPath)
+{
+	// Check if a number was given first:
+	int selected = atoi(requestedPath);
+	if(selected != 0)
+	{
+		if(player->currentArea->areaExits[selected - 1] != NULL &&
+		   player->currentArea->areaExits[selected - 1]->areaToJoin != NULL)
+		{
+			player->currentArea = player->currentArea->areaExits[selected - 1]->areaToJoin;
+			return 0;
+		}
+		else
+		{
+			return 1;
+		}
+	}
+
+	// Otherwise search for the description:
+	for (int index = 0; index < 16; index++)
+	{
+		if(player->currentArea->areaExits[index] != NULL)
+		{
+			if(strncmp(player->currentArea->areaExits[index]->pathName, requestedPath, 32) == 0)
+			{
+				printf("%s: %s\n", player->playerName, player->currentArea->areaExits[index]->pathName);
+				player->currentArea = player->currentArea->areaExits[index]->areaToJoin;
+				return 0;
+			}
+		}   
+	}
+	return 1;
+}

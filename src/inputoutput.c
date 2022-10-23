@@ -24,6 +24,7 @@ int messageSend(gnutls_session_t receivingSession, userMessage * messageToSend)
 		returnValue = gnutls_record_send(receivingSession, messageToSend->messageContent,
 										 sizeof(((userMessage*)0)->messageContent));
 	} while (returnValue == GNUTLS_E_AGAIN || returnValue == GNUTLS_E_INTERRUPTED);
+
 	return returnValue;
 }
 
@@ -41,6 +42,7 @@ int messageReceive(gnutls_session_t receiveFromSession, userMessage * receiveToM
 		returnValue = gnutls_record_recv(receiveFromSession, receiveToMessage->messageContent,
 										 sizeof(((userMessage*)0)->messageContent));
 	} while (returnValue == GNUTLS_E_AGAIN || returnValue == GNUTLS_E_INTERRUPTED);
+	
 	return returnValue;
 }
 
@@ -61,10 +63,6 @@ int queueOutputMessage(outputMessageQueue * queue, userMessage messageToQueue)
 
 	// Allocate the internal userMessage to store the message:
 	newOutputMessage->content = malloc(sizeof(userMessage));
-
-	// Allocate the internal strings to store the message:
-	//outputMessage->content->senderName = malloc(sizeof(char)*32);
-	//outputMessage->content->messageContent = malloc(sizeof(char)*MAX);
 	
 	// Copy the userMessage to the internal userMessage:
 	strncpy(newOutputMessage->content->senderName, messageToQueue.senderName, 32);
@@ -134,8 +132,7 @@ int queueTargetedOutputMessage(outputMessageQueue * queue,
 	// Copy the userMessage to the internal userMessage:
 	strncpy(newOutputMessage->content->senderName, messageToQueue->senderName, 32);
 	strncpy(newOutputMessage->content->messageContent, messageToQueue->messageContent, MAX);
-	
-	
+		
 	// Wait for the queue to unlock:
 	while (queue->lock);
 

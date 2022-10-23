@@ -4,23 +4,8 @@
 #define PLAYERDATA_H
 #include <stdlib.h>
 #include <stdbool.h>
+#include "areadata.h"
 #include "constants.h"
-
-typedef struct playerPath playerPath;
-typedef struct playerArea playerArea;
-
-struct playerPath
-{
-	char pathName[32];
-	playerArea * areaToJoin;
-};
-
-struct playerArea
-{
-	char areaName[32];
-	char areaDescription[MAX - 35];
-	playerPath * areaExits[16];
-};
 
 typedef struct statBlock
 {
@@ -83,15 +68,6 @@ typedef enum coreStat
 	INVALID
 } coreStat;
 
-// Move a player to a different area given a path in the area:
-int movePlayerToArea(playerInfo * player, char * requestedPath);
-
-// Create an area given a name and description:
-playerArea * createArea(char * nameString, char * descriptionString);
-
-// Create a path between two areas given two areas and two strings:
-int createPath(playerArea * fromArea, playerArea * toArea, char * fromDescription, char * toDescription);
-
 // Create a new skill and add it to the global skill list:
 int createSkill(skillList * globalSkillList, char * skillName, int skillNameLength, bool trainedSkill);
 
@@ -111,4 +87,5 @@ coreStat getCoreStatFromString(char * string, int stringLength);
 
 // Deallocate a player:
 int deallocatePlayer(playerInfo * playerToDeallocate);
+
 #endif

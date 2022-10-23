@@ -74,6 +74,9 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue);
 // -=[ Gameplay Primitives ]=-:
 // ============================
 
+// Player movement:
+int movePlayerToArea(playerInfo * player, char * requestedPath);
+
 typedef enum outcome
 {
 	CRITICAL_FAILURE,
