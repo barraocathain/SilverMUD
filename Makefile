@@ -1,20 +1,29 @@
 CC = gcc
-clientsrc = $(wildcard src/misc/*.c) \
-	    src/SilverMUDClient.c
+clientsrc = $(wildcard src/*.c) \
+	    src/client/SilverMUDClient.c
 clientobj = $(clientsrc:.c=.o) 
-serversrc = $(wildcard src/misc/*.c) \
-	    src/SilverMUDServer.c
+serversrc = $(wildcard src/*.c) \
+	    src/server/SilverMUDServer.c
 serverobj = $(serversrc:.c=.o) 
-CLIENTLDFLAGS= -lpthread -lncurses
-SERVERLDFLAGS= -lncurses
+CLIENTLDFLAGS= -lpthread -lncurses -lgnutls
+SERVERLDFLAGS= -lpthread -lncurses -lgnutls 
 SilverMUDClient: $(clientobj)
-	gcc -o $@ $^ $(CLIENTLDFLAGS)
+	gcc  -o $@ $^ $(CLIENTLDFLAGS)
 
 SilverMUDServer: $(serverobj)
-	gcc -o $@ $^ $(SERVERLDFLAGS)
+	gcc  -o $@ $^ $(SERVERLDFLAGS)
+
+SilverMUDClientDebug: $(clientobj)
+	gcc -pg   $^ $(CLIENTLDFLAGS) -o $@
+
+SilverMUDServerDebug: $(serverobj)
+	gcc -pg   $^ $(SERVERLDFLAGS) -o $@
 
 .PHONY: clean
 clean:
-	rm -f $(clientobj) $(serverobj) SilverMUDClient SilverMUDServer
+	rm -f $(clientobj) $(serverobj) SilverMUDClient SilverMUDServer SilverMUDClientDebug SilverMUDServerDebug
 
-all: SilverMUDClient SilverMUDServer
+all: clean SilverMUDClient SilverMUDServer
+all: CFLAGS += -Wall -Wextra -Ofast
+debug: CFLAGS += -Wall -Wextra -pg -ggdb -Og
+debug: clean SilverMUDClientDebug SilverMUDServerDebug
