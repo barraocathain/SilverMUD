@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <unistd.h>
 #include <ncurses.h>
 #include <pthread.h>
@@ -24,11 +25,14 @@
 #include "../inputoutput.h"
 
 typedef struct sockaddr sockaddr;
-	
-int main()
+void sigintHandler(int signal)
+{
+	exit(EXIT_SUCCESS);
+}
+
+int main(int argc, char ** argv)
 {
 	time_t currentTime;
-	bool keepRunning = true;
 	int socketFileDesc, connectionFileDesc, length, clientsAmount,
 		socketCheck, activityCheck, returnVal;
 	fd_set connectedClients;
@@ -40,7 +44,10 @@ int main()
 	struct sockaddr_in serverAddress, clientAddress;
 	inputMessageQueue * inputQueue = createInputMessageQueue();
 	outputMessageQueue * outputQueue = createOutputMessageQueue();
-
+	
+	// Set the handler for SIGINT:
+	signal(2, sigintHandler);
+	
 	// -==[ TEST GAME-STATE INITIALIZATION ]==-
 	// Initialize test areas:
 	areaNode * areas = createAreaList(createArea("Login Area", "Please login with the /join command."));
@@ -182,7 +189,7 @@ int main()
 	slowPrint("=====\n", 5000); 
 	struct timeval timeout = {0, 500};
 	
-	while(keepRunning)
+	while(true)
 	{
 		// Clear the set of file descriptors angad add the master socket:
 		FD_ZERO(&connectedClients);
@@ -325,6 +332,7 @@ int main()
 			dequeueOutputMessage(outputQueue);
 		}
 	}
-	return 0;
+	pthread_cancel(gameLogicThread);
+	exit(EXIT_SUCCESS);
 }
 

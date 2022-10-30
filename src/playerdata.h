@@ -49,7 +49,7 @@ typedef struct skillList
 	skillNode * head;
 	int skillCount;
 } skillList;
-
+\
 typedef struct playerInfo
 {
 	char playerName[32];

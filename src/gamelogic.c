@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdbool.h>
+#include <pthread.h>
 #include "constants.h"
 #include "gamelogic.h"
 #include "playerdata.h"
@@ -18,9 +19,8 @@ void * gameLogicLoop(void * parameters)
 {
 	gameLogicParameters * threadParameters = parameters;
 	inputMessage * currentInput = NULL;
-	bool keepRunning = true;
 	commandQueue * commandQueue = createCommandQueue();
-	while(keepRunning)
+	while(true)
 	{
 		// Evaluate remaining commands:
 		if(commandQueue->currentLength != 0)
@@ -74,7 +74,7 @@ void * gameLogicLoop(void * parameters)
 			dequeueInputMessage(threadParameters->inputQueue);
 		}
 	}
-	return NULL;
+	pthread_exit(NULL);
 }
 
 // Create a commandQueue:
@@ -311,7 +311,9 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 			}
 			default:
 			{
-				strcpy(tryMessage->messageContent, "Not at the moment, mate.\n");
+				sprintf(tryMessage->messageContent,"%d",
+						skillCheck(currentCommand->caller, 10, currentCommand->arguments, strlen(currentCommand->arguments),
+								   parameters->globalSkillList));
 				break;
 			}
 		}
@@ -645,11 +647,14 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 // Run a stat check:
 outcome statCheck(playerInfo * player, int chance, coreStat statToCheck)
 {
+	// Calculate the chance:
 	if(chance > 100 || chance < 0)
 	{
 		return ERROR;
 	}
 	chance = 100 - chance;
+
+	// Calculate the modifier:
 	int modifier = 0;
 	switch(statToCheck)
 	{
@@ -683,6 +688,86 @@ outcome statCheck(playerInfo * player, int chance, coreStat statToCheck)
 			return ERROR;
 		}
 	}
+	int attempt = (random() % 100) + modifier;
+	if(attempt >= chance)
+	{
+		if(attempt >= 98)
+		{
+			return CRITICAL_SUCCESS;
+		}
+		else
+		{
+			return SUCCESS;
+		}
+	}
+	else
+	{
+		if(attempt <= 2)
+		{
+			return CRITICAL_FAILURE;
+		}
+		else
+		{
+			return FAILURE;
+		}
+	}
+}
+
+// Run a skill check:
+outcome skillCheck(playerInfo * player, int chance, char * skillName, size_t skillNameLength, skillList * globalSkillList)
+{
+	// Calculate the chance:
+	if(chance > 100 || chance < 0)
+	{
+		return ERROR;
+	}
+	chance = 100 - chance;
+
+	// Check if the player has the given skill:
+	bool playerHasSkill = false;
+	skillNode * currentPlayerNode = player->skills->head;
+	while(currentPlayerNode != NULL)
+	{
+		if(strncmp(skillName, currentPlayerNode->skill->skillName, skillNameLength) == 0)
+		{
+			playerHasSkill = true;
+			break;
+		}
+		currentPlayerNode = currentPlayerNode->next;
+	}
+
+	// If the player doesn't have the skill, check if it's in the game and is trained:
+	bool trainedSkill = false;
+	if(!playerHasSkill)
+	{
+		skillNode * currentNode = globalSkillList->head;
+		while(strncmp(skillName, currentNode->skill->skillName, 32) != 0)
+		{
+			if(currentNode->next == NULL)
+			{
+				fprintf(stderr, "Skill doesn't exist in skill list.\n");
+				return ERROR;
+			}
+			currentNode = currentNode->next;
+		}
+		if(currentNode->skill->trainedSkill == true)
+		{
+			trainedSkill = true;
+		}
+	}
+		
+	// Calculate the modifier:
+	int modifier = 0;
+	if(trainedSkill)
+	{
+		modifier = -100;
+	}
+	else
+	{
+		modifier = currentPlayerNode->skill->skillPoints * 4;
+	}
+	
+	// Attempt the check:
 	int attempt = (random() % 100) + modifier;
 	if(attempt >= chance)
 	{

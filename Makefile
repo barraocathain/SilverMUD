@@ -14,16 +14,16 @@ SilverMUDServer: $(serverobj)
 	gcc  -o $@ $^ $(SERVERLDFLAGS)
 
 SilverMUDClientDebug: $(clientobj)
-	gcc  $^ $(CLIENTLDFLAGS) -o $@
+	gcc -pg   $^ $(CLIENTLDFLAGS) -o $@
 
 SilverMUDServerDebug: $(serverobj)
-	gcc  $^ $(SERVERLDFLAGS) -o $@
+	gcc -pg   $^ $(SERVERLDFLAGS) -o $@
 
 .PHONY: clean
 clean:
 	rm -f $(clientobj) $(serverobj) SilverMUDClient SilverMUDServer SilverMUDClientDebug SilverMUDServerDebug
 
-all: SilverMUDClient SilverMUDServer
+all: clean SilverMUDClient SilverMUDServer
 all: CFLAGS += -Wall -Wextra -Ofast
-debug: CFLAGS += -Wall -ggdb -Wextra -Og -pg
+debug: CFLAGS += -Wall -Wextra -pg -ggdb -Og
 debug: clean SilverMUDClientDebug SilverMUDServerDebug
