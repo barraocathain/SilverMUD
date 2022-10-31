@@ -58,36 +58,39 @@ int addSkillNode(skillList * skillList, playerSkill * skill)
 // Remove a skill node from a skill list:
 int removeSkillNode(skillList * skillList, playerSkill * skill)
 {
+	// Check the validity of the pointers:
+	if(skillList->head == NULL || skill == NULL)
+	{
+		return -1;
+	}
+
 	if(skillList->head->skill == skill)
 	{
+		skillNode * newHead = skillList->head->next;
 		free(skillList->head->skill);
-		if(skillList->head->next != NULL)
-		{
-			skillNode * deletedNode = skillList->head;
-			skillList->head = skillList->head->next;
-			free(deletedNode);			
-			return 0; 
-		}
-		else
-		{
-			skillNode * currentNode = skillList->head;
-			skillNode * previousNode = skillList->head;
-			while(currentNode->skill != skill)
-			{
-				if(currentNode->next == NULL)
-				{
-					return -1;
-				}
-				previousNode = currentNode;
-				currentNode = currentNode->next;
-			}
-			free(currentNode->skill);
-			previousNode->next = currentNode->next;
-			free(currentNode);
-			return 0;
-		}
+		free(skillList->head);
+		skillList->head = newHead;
+		return 0;
 	}
-	return -1;
+	
+	else
+	{
+		skillNode * currentNode = skillList->head;
+		skillNode * previousNode = skillList->head;
+		while(currentNode->skill != skill)
+		{
+			if(currentNode->next == NULL)
+			{
+				return -1;
+			}
+			previousNode = currentNode;
+			currentNode = currentNode->next;
+		}
+		free(currentNode->skill);
+		previousNode->next = currentNode->next;
+		free(currentNode);
+		return 0;
+	}	
 }
 
 // Take a skill and add it to the player's skill list:

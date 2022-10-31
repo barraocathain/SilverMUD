@@ -157,12 +157,12 @@ int main(int argc, char ** argv)
 		{
 		case 'i':
 		{
-			strncpy(ipAddress, optarg, 32);
+			memcpy(ipAddress, optarg, 32);
 			break;
 		}
 		case 'c':
 		{
-			strncpy(chatLogPath, optarg, PATH_MAX + 1);
+			memcpy(chatLogPath, optarg, PATH_MAX + 1);
 			chatLog = fopen(chatLogPath, "a+");
 			if (chatLog == NULL)
 			{
@@ -176,7 +176,7 @@ int main(int argc, char ** argv)
 		}
 		case 'g':
 		{
-			strncpy(gameLogPath, optarg, PATH_MAX + 1);
+			memcpy(gameLogPath, optarg, PATH_MAX + 1);
 			gameLog = fopen(gameLogPath, "a+");
 			if (gameLog == NULL)
 			{

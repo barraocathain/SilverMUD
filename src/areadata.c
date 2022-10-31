@@ -16,11 +16,11 @@ playerArea * createArea(char * nameString, char * descriptionString)
 
 	// Copy the strings into the newly created area:
 	strncpy(createdArea->areaName, nameString, 32 - 1);
-	strncpy(createdArea->areaDescription, descriptionString, MAX - 35);
+	strncpy(createdArea->areaDescription, descriptionString, MAX - 36);
 
 	// Properly null-terminate the strings:
 	createdArea->areaName[31] = '\0';
-	createdArea->areaDescription[MAX] = '\0';
+	createdArea->areaDescription[MAX - 36] = '\0';
 
 	// Ensure that all the paths are set to NULL:
 	for(int index = 0; index < 16; index++)

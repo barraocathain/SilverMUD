@@ -112,14 +112,17 @@ int queueMessagedCommand(commandQueue * queue, inputMessage * messageToQueue)
 	strtok(messageToQueue->content->messageContent, " ");
 
 	// Copy the command and arguments to the new commandEvent:
-	strncpy(newCommand->command, &messageToQueue->content->messageContent[1], 16);
-	strncpy(newCommand->arguments, &messageToQueue->content->messageContent[strlen(newCommand->command) + 2],
+	memcpy(newCommand->command, &messageToQueue->content->messageContent[1], 16);
+	memcpy(newCommand->arguments, &messageToQueue->content->messageContent[strlen(newCommand->command) + 2],
 			MAX - (strlen(newCommand->command) + 2));
 
 	// Ensure the arguments are safe to parse, without adding newlines:
 	userNameSanatize(newCommand->command, 16);
+	newCommand->command[15] = '\0';
+	
 	userNameSanatize(newCommand->arguments, MAX);
-
+	newCommand->arguments[MAX - 1] = '\0';
+	
 	// Lowercase the command for easier comparison:
 	for (char * character = newCommand->command; *character; ++character)
 	{
@@ -336,7 +339,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 		char requestedPath[32];
 		if(strlen(currentCommand->arguments) > 0 && currentCommand->caller->currentArea != getAreaFromList(parameters->areaList, 0))
 		{
-			strncpy(requestedPath, currentCommand->arguments, 32);
+			memcpy(requestedPath, currentCommand->arguments, 32);
 			userNameSanatize(requestedPath, 32);
 			requestedPath[31] = '\0';
 			if(movePlayerToArea(currentCommand->caller, requestedPath) == 0)

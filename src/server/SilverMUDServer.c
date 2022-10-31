@@ -27,12 +27,14 @@
 typedef struct sockaddr sockaddr;
 void sigintHandler(int signal)
 {
+	printf("Caught signal %d.\n", signal);
 	exit(EXIT_SUCCESS);
 }
 
 int main(int argc, char ** argv)
 {
 	time_t currentTime;
+	unsigned delay = 4000;
 	int socketFileDesc, connectionFileDesc, length, clientsAmount,
 		socketCheck, activityCheck, returnVal;
 	fd_set connectedClients;
@@ -44,6 +46,20 @@ int main(int argc, char ** argv)
 	struct sockaddr_in serverAddress, clientAddress;
 	inputMessageQueue * inputQueue = createInputMessageQueue();
 	outputMessageQueue * outputQueue = createOutputMessageQueue();
+
+	// Parse command-line options:
+	int currentopt = 0;
+	while ((currentopt = getopt(argc, argv, "d:")) != -1)
+	{
+		switch(currentopt)
+		{
+			case 'd':
+			{
+				delay = atoi(optarg);
+				break;
+			}
+		}
+	}
 	
 	// Set the handler for SIGINT:
 	signal(2, sigintHandler);
@@ -97,8 +113,8 @@ int main(int argc, char ** argv)
 	// -==[ TEST GAME-STATE INITIALIZATION END ]==-
 	
 	// Give an intro: Display the Silverkin Industries logo and splash text.
-	slowPrint(logostring, 3000);
-	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.4\n", 5000);
+	slowPrint(logostring, delay);
+	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.4\n", delay);
 
 	// Seed random number generator from the current time:
 	srandom((unsigned)time(&currentTime));
@@ -119,7 +135,7 @@ int main(int argc, char ** argv)
 
 	else
 	{
-		slowPrint("\tSocket Creation is:\t\033[32;40mGREEN.\033[0m\n", 5000);
+		slowPrint("\tSocket Creation is:\t\033[32;40mGREEN.\033[0m\n", delay);
 	}
 
 	// 
@@ -139,7 +155,7 @@ int main(int argc, char ** argv)
 	
 	else
 	{
-		slowPrint("\tSocket Binding is:\t\033[32;40mGREEN.\033[0m\n", 5000);
+		slowPrint("\tSocket Binding is:\t\033[32;40mGREEN.\033[0m\n", delay);
 	}
 	
 	// Let's start listening:
@@ -150,7 +166,7 @@ int main(int argc, char ** argv)
 	}
 	else		
 	{
-		slowPrint("\tServer Listener is:\t\033[32;40mGREEN.\033[0m\n", 5000);
+		slowPrint("\tServer Listener is:\t\033[32;40mGREEN.\033[0m\n", delay);
 	}
 	length = sizeof(clientAddress);
 
@@ -173,7 +189,7 @@ int main(int argc, char ** argv)
 		gnutls_credentials_set(tlssessions[index], GNUTLS_CRD_ANON, &serverkey);
 		gnutls_handshake_set_timeout(tlssessions[index], GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
   	}
-	slowPrint("\tTLS Preparation is:\t\033[32;40mGREEN.\033[0m\n", 5000);
+	slowPrint("\tTLS Preparation is:\t\033[32;40mGREEN.\033[0m\n", delay);
 
 	// Prepare the game logic thread:
 	gameLogicParameters * gameLogicThreadParameters = malloc(sizeof(gameLogicParameters));
@@ -185,8 +201,8 @@ int main(int argc, char ** argv)
 	gameLogicThreadParameters->areaList = areas;
 	pthread_create(&gameLogicThread, NULL, &gameLogicLoop, gameLogicThreadParameters);
 
-	slowPrint("\tEvent Thread is:\t\033[32;40mGREEN.\033[0m\n", 5000);
-	slowPrint("=====\n", 5000); 
+	slowPrint("\tEvent Thread is:\t\033[32;40mGREEN.\033[0m\n", delay);
+	slowPrint("=====\n", delay); 
 	struct timeval timeout = {0, 500};
 	
 	while(true)

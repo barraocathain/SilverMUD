@@ -265,17 +265,17 @@ int dequeueInputMessage(inputMessageQueue * queue)
 int queueInputMessage(inputMessageQueue * queue, userMessage messageToQueue, playerInfo * sendingPlayer)
 {
 	// Copy the message into a new input message:
-	inputMessage * inputMessage = malloc(sizeof(inputMessage));
+	inputMessage * input = malloc(sizeof(inputMessage));
 
 	// Allocate the internal userMessage to store the message:
-	inputMessage->content = malloc(sizeof(userMessage));
+	input->content = malloc(sizeof(userMessage));
 
 	// Copy the userMessage to the internal userMessage:
-	strncpy(inputMessage->content->senderName, messageToQueue.senderName, 32);
-	strncpy(inputMessage->content->messageContent, messageToQueue.messageContent, MAX);
+	strncpy(input->content->senderName, messageToQueue.senderName, 32);
+	strncpy(input->content->messageContent, messageToQueue.messageContent, MAX);
 
 	// We have no targets, NULL sends to all players in an area:
-	inputMessage->sender = sendingPlayer;	
+	input->sender = sendingPlayer;	
 
 	// Wait for the queue to unlock:
 	while (queue->lock);
@@ -295,8 +295,8 @@ int queueInputMessage(inputMessageQueue * queue, userMessage messageToQueue, pla
 		// If the queue is empty, set the first message as both the front and back of the queue:
 		if(queue->front == NULL)
 		{
-			queue->front = inputMessage;
-			queue->back = inputMessage;
+			queue->front = input;
+			queue->back = input;
 			queue->currentLength++;
 			
 			// Unlock the queue:
@@ -306,8 +306,8 @@ int queueInputMessage(inputMessageQueue * queue, userMessage messageToQueue, pla
 		}
 		else
 		{
-			queue->back->next = inputMessage;
-			queue->back = inputMessage;
+			queue->back->next = input;
+			queue->back = input;
 			queue->currentLength++;
 
 			// Unlock the queue:
