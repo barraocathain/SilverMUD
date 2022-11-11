@@ -21,6 +21,7 @@
 #include "../gamelogic.h"
 #include "../constants.h"
 #include "../playerdata.h"
+#include "../linkedlist.h"
 #include "../texteffects.h"
 #include "../inputoutput.h"
 
