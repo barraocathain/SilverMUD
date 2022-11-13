@@ -20,7 +20,7 @@ static inline void deallocateListNode(listNode * node, listDataType type)
 		}
 		case AREA:
 		{
-//			destroyList(node->data.area->paths);
+			destroyList(&(node->data.area->pathList));
 			free(node->data.area);
 			free(node);
 			break;
