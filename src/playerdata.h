@@ -6,6 +6,11 @@
 #include <stdbool.h>
 #include "areadata.h"
 #include "constants.h"
+#include "linkedlist.h"
+
+// Let the compiler know there will be structs defined elsewhere:
+typedef struct playerPath playerPath;
+typedef struct playerArea playerArea;
 
 typedef struct statBlock
 {
@@ -49,7 +54,7 @@ typedef struct skillList
 	skillNode * head;
 	int skillCount;
 } skillList;
-\
+
 typedef struct playerInfo
 {
 	char playerName[32];

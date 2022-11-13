@@ -2,8 +2,14 @@
 // Barry Kane, 2022.
 #ifndef LINKEDLIST_H
 #define LINKEDLIST_H
-#include "playerdata.h"
 #include "areadata.h"
+#include "playerdata.h"
+
+// Let the compiler know there will be structs defined elsewhere:
+typedef struct playerPath playerPath;
+typedef struct playerArea playerArea;
+typedef struct playerInfo playerInfo;
+typedef struct playerSkill playerSkill;
 
 // ========================
 // -=[ Data Structures ]=-:

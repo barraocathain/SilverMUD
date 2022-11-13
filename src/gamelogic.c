@@ -8,6 +8,7 @@
 #include "constants.h"
 #include "gamelogic.h"
 #include "playerdata.h"
+#include "linkedlist.h"
 #include "inputoutput.h"
 
 // =======================
@@ -364,16 +365,25 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 		strncat(lookMessage->messageContent, currentCommand->caller->currentArea->areaDescription, MAX - 35);
 		queueTargetedOutputMessage(parameters->outputQueue, lookMessage, &currentCommand->caller, 1);
 		bzero(lookMessage, sizeof(userMessage));
-		if(currentCommand->caller->currentArea->areaExits[0] != NULL)
+
+		// Loop through the paths and send the appropriate amount of messages:
+		int charCount = 13;
+		strncat(lookMessage->messageContent, "You can go:", 13);
+		
+		if(currentCommand->caller->currentArea->pathList->itemCount > 0)
 		{
-			strncat(lookMessage->messageContent, "You can go:", 13);
-			for(int index = 0; index < 16; index++)
+			for(size_t index = 0; index < currentCommand->caller->currentArea->pathList->itemCount; index++)
 			{
-				if(currentCommand->caller->currentArea->areaExits[index] != NULL)
+				if((charCount + 64) >= MAX)
 				{
-					snprintf(formattedString, 64, "\n\t%d. %s", index + 1, currentCommand->caller->currentArea->areaExits[index]->pathName);
-					strncat(lookMessage->messageContent, formattedString, 64);
+					queueTargetedOutputMessage(parameters->outputQueue, lookMessage, &currentCommand->caller, 1);
+					bzero(lookMessage, sizeof(userMessage));
+					charCount = 0;
 				}
+				snprintf(formattedString, 64, "\n\t%ld. %s", index + 1,
+						 getFromList(currentCommand->caller->currentArea->pathList, index)->path->pathName);
+				strncat(lookMessage->messageContent, formattedString, 64);
+				charCount += 64;
 			}	   
 			queueTargetedOutputMessage(parameters->outputQueue, lookMessage, &currentCommand->caller, 1);
 		}
@@ -469,7 +479,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 				strncat(statMessage->messageContent, formattedString, 120);
 				if((charCount + 43) >= MAX)
 				{
-					strncat(statMessage->messageContent, "\n", 2);
+//					strncat(statMessage->messageContent, "\n", 2);
 					queueTargetedOutputMessage(parameters->outputQueue, statMessage, &currentCommand->caller, 1);
 					bzero(statMessage, sizeof(userMessage));
 					charCount = 0;
@@ -800,13 +810,13 @@ outcome skillCheck(playerInfo * player, int chance, char * skillName, size_t ski
 int movePlayerToArea(playerInfo * player, char * requestedPath)
 {
 	// Check if a number was given first:
-	int selected = atoi(requestedPath);
-	if(selected != 0)
+	size_t selected = atoi(requestedPath);
+	if(selected != 0 && !(selected > player->currentArea->pathList->itemCount))
 	{
-		if(player->currentArea->areaExits[selected - 1] != NULL &&
-		   player->currentArea->areaExits[selected - 1]->areaToJoin != NULL)
+		if(getFromList(player->currentArea->pathList, selected - 1)->path != NULL &&
+		   getFromList(player->currentArea->pathList, selected - 1)->path->areaToJoin != NULL)
 		{
-			player->currentArea = player->currentArea->areaExits[selected - 1]->areaToJoin;
+			player->currentArea = getFromList(player->currentArea->pathList, selected - 1)->path->areaToJoin;
 			return 0;
 		}
 		else
@@ -816,17 +826,15 @@ int movePlayerToArea(playerInfo * player, char * requestedPath)
 	}
 
 	// Otherwise search for the description:
-	for (int index = 0; index < 16; index++)
+	for (size_t index = 0; index < player->currentArea->pathList->itemCount; index++)
 	{
-		if(player->currentArea->areaExits[index] != NULL)
+		if(strncmp(getFromList(player->currentArea->pathList, index)->path->pathName,
+				   requestedPath, 32) == 0)
 		{
-			if(strncmp(player->currentArea->areaExits[index]->pathName, requestedPath, 32) == 0)
-			{
-				printf("%s: %s\n", player->playerName, player->currentArea->areaExits[index]->pathName);
-				player->currentArea = player->currentArea->areaExits[index]->areaToJoin;
-				return 0;
-			}
-		}   
-	}
+			printf("%s: %s\n", player->playerName, getFromList(player->currentArea->pathList, index)->path->pathName);
+			player->currentArea = getFromList(player->currentArea->pathList, index)->path->areaToJoin;
+			return 0;
+		}
+	}   
 	return 1;
 }

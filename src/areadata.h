@@ -3,6 +3,8 @@
 #ifndef AREADATA_H
 #define AREADATA_H
 #include "constants.h"
+#include "linkedlist.h"
+
 // ====================
 // -=[ Area/Paths: ]=-:
 // ====================
@@ -18,9 +20,10 @@ struct playerPath
 
 struct playerArea
 {
+	list * pathList;
 	char areaName[32];
 	char areaDescription[MAX - 35];
-	playerPath * areaExits[16];
+//	playerPath * areaExits[16];
 };
 
 // Create an area given a name and description:

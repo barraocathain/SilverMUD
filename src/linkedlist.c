@@ -90,7 +90,7 @@ listData * getFromList(list * list, size_t listIndex)
 	// Return the head if index is 0:
 	else if(listIndex == 0)
 	{
-		return &list->head->data;
+		return &(list->head->data);
 	}
 	// Loop through the entries in the list until we get to the right one:
 	else
@@ -100,7 +100,7 @@ listData * getFromList(list * list, size_t listIndex)
 		{
 			currentNode = currentNode->next;
 		}
-		return &currentNode->data;
+		return &(currentNode->data);
 	}
 }
 
@@ -424,7 +424,7 @@ bool getIndexFromList(list * list, void * data, listDataType type, size_t * inde
 		return false;
 	}
 
-	for(*index = 0; *index < list->itemCount; *index++)
+	for(*index = 0; *index < list->itemCount; *index += 1)
 	{
 		switch(type)
 		{
