@@ -68,23 +68,26 @@ int main(int argc, char ** argv)
 	// -==[ TEST GAME-STATE INITIALIZATION ]==-
 	// Initialize test areas:
 	areaNode * areas = createAreaList(createArea("Login Area", "Please login with the /join command."));
-	addAreaNodeToList(areas, createArea("Temple Entrance",
-										"You are standing outside a large, elaborate temple, of white marble and delicate construction. "
-										"Etched onto the left pillar next to the large opening is the same symbol, over and over again, a gentle curve with it's ends pointing to the right. "
-										"A similar symbol is on the right pillar, but it's ends are pointing to the left. "));
-	
-	addAreaNodeToList(areas, createArea("The Hall of Documentation",
-										"Just past the threshold of the entrance lies a large hall, with bookshelves lining the walls, ceiling to floor. "
-										"The shelves are filled to the brim with finely-bound books, each with titles in silver lettering on the spine. "
-										"There are countless books, but you notice a large lectern in the center of the room, and a path leading upwards at the back. "));
-	
-	addAreaNodeToList(areas, createArea("Monument to GNU",
-										"A beautifully ornate statue of GNU is above you on a pedestal. "
-										"Inscribed into the pillar, over and over, is the phrase \"M-x exalt\", in delicate gold letters. "
-										"You can't help but be awestruck."));
+	addAreaNodeToList(areas, createArea("Octal One - Docking Bay Alpha",
+										"You are standing in the main docking bay of the largest station in the Octal System. "
+										"The sheer size of the bay is awe-inpiring. The number of ships is endless. "
+										"The bay is curved along with the body of the station. A catwalk runs along the back wall of the bay. "
+										"Two large arches lie at each end, leading to the other bays, and in the center, a set of doors leading to the interior of the station."));
+
+	addAreaNodeToList(areas, createArea("Octal One - Station Access Control",
+										"You enter into the hallway leading to the main interior of the station."
+										"The attendant informs you that due to a computer error, exits cannot be proccessed at the moment, so you will be unable to leave, until it is resolved. "
+										"He apologizes profusely for the inconvenience, and clears you for entry if you wish to continue."));
+		
+	addAreaNodeToList(areas, createArea("Octal One - Floor Zero",
+										"You've never quite seen so many people in one place. A large ring of shopfronts surrounds an area filled with benches and tables. "
+										"There's so many buisnesses in sight that you feel you could find everything you need, and this is only one of 25 main floors, "
+										"not to mention the 6 outer pylons which surround the main hull of the station. Staircases lead to an upper platform allowing access to the pylons. "));
+					  
 	// Initialize test paths:
-	createPath(getAreaFromList(areas, 1), getAreaFromList(areas, 2), "Go inside the temple.", "Leave the temple.");
-  	createPath(getAreaFromList(areas, 3), getAreaFromList(areas, 2), "Back to the Hall of Documentation.", "Path to Enlightenment.");
+	createPath(getAreaFromList(areas, 1), getAreaFromList(areas, 2), "Enter the station interior.", "Return to Docking Bay Alpha.");
+  	createOneWayPath(getAreaFromList(areas, 2), getAreaFromList(areas, 3), "Continue to station interior. ");
+	
 	skillList * globalSkillList = malloc(sizeof(skillList));
 	globalSkillList->head = NULL;
 

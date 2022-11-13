@@ -32,6 +32,9 @@ playerArea * createArea(char * nameString, char * descriptionString);
 // Create a path between two areas given two areas and two strings:
 int createPath(playerArea * fromArea, playerArea * toArea, char * fromDescription, char * toDescription);
 
+// Create a one-way path between two areas given two areas and a string:
+int createOneWayPath(playerArea * fromArea, playerArea * toArea, char * description);
+
 // =========================
 // -=[ Area/Path Lists: ]=-:
 // =========================

@@ -54,6 +54,23 @@ int createPath(playerArea * fromArea, playerArea * toArea, char * fromDescriptio
 	return 0;
 }
 
+// Create a one-way path between two areas given two areas and a string:
+int createOneWayPath(playerArea * fromArea, playerArea * toArea, char * description)
+{
+	// Allocate the new paths:
+	playerPath * path = calloc(1, sizeof(playerPath));
+
+	// Setup the path:
+	strncpy(path->pathName, description, 32 - 1);
+	path->pathName[31] = '\0';
+	path->areaToJoin = toArea;
+
+	// Add to the list:
+	addToList(fromArea->pathList, path, PATH);
+	
+	return 0;
+}
+
 // =========================
 // -=[ Area/Path Lists: ]=-:
 // =========================
