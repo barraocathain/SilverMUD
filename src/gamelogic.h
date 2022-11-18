@@ -16,7 +16,7 @@
 typedef struct gameLogicParameters
 {
 	int * playerCount;
-	areaNode * areaList;
+	list * areaList;
 	playerInfo * connectedPlayers;
 	inputMessageQueue * inputQueue;
 	outputMessageQueue * outputQueue;

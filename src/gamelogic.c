@@ -40,8 +40,8 @@ void * gameLogicLoop(void * parameters)
 			{
 				queueMessagedCommand(commandQueue, currentInput);
 			}
-			else if(currentInput->sender->currentArea == getAreaFromList(threadParameters->areaList, 0))
-			{
+			else if(currentInput->sender->currentArea == getFromList(threadParameters->areaList, 0)->area)
+			{ 
 				currentInput = NULL;
 				threadParameters->inputQueue->lock = false;
 				dequeueInputMessage(threadParameters->inputQueue);
@@ -338,7 +338,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 	if(strncmp(currentCommand->command, "move", 4) == 0)
 	{
 		char requestedPath[32];
-		if(strlen(currentCommand->arguments) > 0 && currentCommand->caller->currentArea != getAreaFromList(parameters->areaList, 0))
+		if(strlen(currentCommand->arguments) > 0 && currentCommand->caller->currentArea != getFromList(parameters->areaList, 0)->area)
 		{
 			memcpy(requestedPath, currentCommand->arguments, 32);
 			userNameSanatize(requestedPath, 32);
@@ -393,7 +393,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 	// TODO: Implement login/character creation. Will be a while:
 	if(strncmp(currentCommand->command, "join", 4) == 0)
 	{
-		if(currentCommand->caller->currentArea == getAreaFromList(parameters->areaList, 0))
+		if(currentCommand->caller->currentArea == getFromList(parameters->areaList, 0)->area)
 		{
 			bool validName = true;
 			for(int index = 0; index < *parameters->playerCount; index++)
@@ -410,7 +410,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 			if(validName)
 			{
 				strncpy(currentCommand->caller->playerName, currentCommand->arguments, 16);
-				currentCommand->caller->currentArea = getAreaFromList(parameters->areaList, 1);
+				currentCommand->caller->currentArea = getFromList(parameters->areaList, 1)->area;
 				// Call the look command after joining. It's fine to unlock, because the loop won't
 				// continue until the command is queued:
 				queue->lock = false;

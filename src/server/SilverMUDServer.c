@@ -67,26 +67,32 @@ int main(int argc, char ** argv)
 	
 	// -==[ TEST GAME-STATE INITIALIZATION ]==-
 	// Initialize test areas:
-	areaNode * areas = createAreaList(createArea("Login Area", "Please login with the /join command."));
-	addAreaNodeToList(areas, createArea("Octal One - Docking Bay Alpha",
-										"You are standing in the main docking bay of the largest station in the Octal System. "
-										"The sheer size of the bay is awe-inpiring. The number of ships is endless. "
-										"The bay is curved along with the body of the station. A catwalk runs along the back wall of the bay. "
-										"Two large arches lie at each end, leading to the other bays, and in the center, a set of doors leading to the interior of the station."));
+	list * areas = createList(AREA);
+	addToList(areas, createArea("Login Area", "Please login with the /join command."), AREA);
 
-	addAreaNodeToList(areas, createArea("Octal One - Station Access Control",
-										"You enter into the hallway leading to the main interior of the station."
-										"The attendant informs you that due to a computer error, exits cannot be proccessed at the moment, so you will be unable to leave, until it is resolved. "
-										"He apologizes profusely for the inconvenience, and clears you for entry if you wish to continue."));
+	// Create the areas:
+	addToList(areas, createArea("Octal One - Docking Bay Alpha",
+								"You are standing in the main docking bay of the largest station in the Octal System. "
+								"The sheer size of the bay is awe-inpiring. The number of ships is endless. "
+								"The bay is curved along with the body of the station. A catwalk runs along the back wall of the bay. "
+								"Two large arches lie at each end, leading to the other bays, and in the center, a set of doors leading to the interior of the station."), AREA);
+
+	addToList(areas, createArea("Octal One - Station Access Control",
+								"You enter into the hallway leading to the main interior of the station."
+								"The attendant informs you that due to a computer error, exits cannot be proccessed at the moment,"
+								" so you will be unable to leave, until it is resolved. "
+								"He apologizes profusely for the inconvenience, and clears you for entry if you wish to continue."), AREA);
 		
-	addAreaNodeToList(areas, createArea("Octal One - Floor Zero",
-										"You've never quite seen so many people in one place. A large ring of shopfronts surrounds an area filled with benches and tables. "
-										"There's so many buisnesses in sight that you feel you could find everything you need, and this is only one of 25 main floors, "
-										"not to mention the 6 outer pylons which surround the main hull of the station. Staircases lead to an upper platform allowing access to the pylons. "));
+	addToList(areas, createArea("Octal One - Floor Zero",
+								"You've never quite seen so many people in one place. A large ring of shopfronts surrounds an area filled with benches and tables. "
+								"There's so many buisnesses in sight that you feel you could find everything you need, and this is only one of 25 main floors, "
+								"not to mention the 6 outer pylons which surround the main hull of the station. Staircases lead to an upper platform allowing access to the pylons. "), AREA);
 					  
 	// Initialize test paths:
-	createPath(getAreaFromList(areas, 1), getAreaFromList(areas, 2), "Enter the station interior.", "Return to Docking Bay Alpha.");
-  	createOneWayPath(getAreaFromList(areas, 2), getAreaFromList(areas, 3), "Continue to station interior. ");
+	createPath(getFromList(areas, 1)->area, getFromList(areas, 2)->area,
+			   "Enter the station interior.", "Return to Docking Bay Alpha.");
+  	createOneWayPath(getFromList(areas, 2)->area, getFromList(areas, 3)->area,
+					 "Continue to station interior. ");
 	
 	skillList * globalSkillList = malloc(sizeof(skillList));
 	globalSkillList->head = NULL;
@@ -106,7 +112,7 @@ int main(int argc, char ** argv)
 		// OH NO IT'S NOT MEMORY SAFE BETTER REWRITE IT IN RUST
 		// But wait, we know the string won't be too big, so it's fine.
 		strcpy(connectedPlayers[index].playerName, testString);
-		connectedPlayers[index].currentArea = getAreaFromList(areas, 0);
+		connectedPlayers[index].currentArea = getFromList(areas, 0)->area;
 		connectedPlayers[index].stats = calloc(1, sizeof(statBlock));
 		connectedPlayers[index].stats->specPoints = 30;
 		connectedPlayers[index].stats->skillPoints = 30;
@@ -300,7 +306,7 @@ int main(int argc, char ** argv)
 						// Clear out the old player state so that a new one may join:
 						sprintf(testString, "UNNAMED %d", index);
 						strcpy(connectedPlayers[index].playerName, testString);
-						connectedPlayers[index].currentArea = getAreaFromList(areas, 0);
+						connectedPlayers[index].currentArea = getFromList(areas, 0)->area;
 
 						// Prepare a fresh SSL session for the next new player:
 						gnutls_init(&tlssessions[index], GNUTLS_SERVER);

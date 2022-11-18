@@ -125,7 +125,7 @@ void * messageReceiver(void * parameters)
 				serverMessage = false;
 			}
 			slowPrintNcurses(receiveBuffer.senderName, 4000, threadParameters->window, true);
-			slowPrintNcurses(": ", 4000, threadParameters->window, true);
+ 			slowPrintNcurses(": ", 4000, threadParameters->window, true);
 			slowPrintNcurses(receiveBuffer.messageContent, 4000, threadParameters->window, false);
 		}
 	}
@@ -156,7 +156,7 @@ int main(int argc, char ** argv)
 		switch (currentopt)
 		{
 		case 'i':
-		{
+          		{
 			memcpy(ipAddress, optarg, 32);
 			break;
 		}
@@ -192,7 +192,7 @@ int main(int argc, char ** argv)
 		{
 			port = atoi(optarg);
 			break;
-		}
+  		}
 		case 'd':
 		{
 			characterDelay = atoi(optarg);
@@ -225,7 +225,7 @@ int main(int argc, char ** argv)
 	serverAddress.sin_port = htons(port);
   
 	// Connect the server and client sockets, Kronk:
-	if (connect(socketFileDesc, (sockaddr*)&serverAddress, sizeof(serverAddress)) != 0)
+         	if (connect(socketFileDesc, (sockaddr*)&serverAddress, sizeof(serverAddress)) != 0)
 	{
 		slowPrint("Connection with the Silverkin Industries Comm-Link Server Failed:\nPlease contact your service representative.\n", characterDelay);
 		exit(0);
@@ -256,7 +256,7 @@ int main(int argc, char ** argv)
     // Use the default for the GnuTLS handshake timeout:
 	gnutls_handshake_set_timeout(tlsSession, GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
 
-	// Repeatedly attempt to handshake unless we encounter a fatal error:
+   	// Repeatedly attempt to handshake unless we encounter a fatal error:
 	int returnValue = -1;
 	do
 	{
