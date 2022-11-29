@@ -468,13 +468,15 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 		bzero(statMessage->messageContent, sizeof(char) * MAX);
 		if(currentCommand->caller->skills->head != NULL)
 		{			
-			skillNode * currentSkill = currentCommand->caller->skills->head;
+			size_t skillIndex = 0;
 			int charCount = 0;
 			bool addNewline = false;
-			while(currentSkill != NULL)
+			playerSkill * skill;
+			while(skillIndex < currentCommand->caller->skills->itemCount)
 			{
-				snprintf(formattedString, 120, "| %2d | %31s ",
-						 currentSkill->skill->skillPoints, currentSkill->skill->skillName);
+				skill = getFromList(currentCommand->caller->skills, skillIndex)->skill;
+				skillIndex++;
+				snprintf(formattedString, 120, "| %2d | %31s ", skill->skillPoints, skill->skillName);
 				charCount += 43;
 				strncat(statMessage->messageContent, formattedString, 120);
 				if((charCount + 43) >= MAX)
@@ -494,9 +496,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 				else
 				{
 					addNewline = true;
-				}
-				currentSkill = currentSkill->next;
-			
+				}		  
 			}
 			queueTargetedOutputMessage(parameters->outputQueue, statMessage, &currentCommand->caller, 1);
 		}
@@ -617,14 +617,16 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 	}
 	if(strncmp(currentCommand->command, "listskills", 10) == 0)
 	{
-		skillNode * currentSkill = parameters->globalSkillList->head;
 		userMessage * listMessage = calloc(1, sizeof(userMessage));
 		char * formattedString = calloc(121, sizeof(char));
 		int charCount = 0;
+		size_t skillIndex = 0;
 		bool addNewline = false;
-		while(currentSkill != NULL)
+		playerSkill * currentSkill;
+		while(skillIndex < parameters->globalSkillList->itemCount)
 		{
-			snprintf(formattedString, 120, "| %-31s ", currentSkill->skill->skillName);
+			currentSkill = getFromList(parameters->globalSkillList, skillIndex)->skill;
+			snprintf(formattedString, 120, "| %-31s ", currentSkill->skillName);
 			charCount += 43;
 			strncat(listMessage->messageContent, formattedString, 120);
 			if((charCount + 46) >= MAX)
@@ -644,7 +646,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 			{
 				addNewline = true;
 			}
-			currentSkill = currentSkill->next;
+			skillIndex++;
 		}
 		queueTargetedOutputMessage(parameters->outputQueue, listMessage, &currentCommand->caller, 1);
 		free(listMessage);
@@ -727,7 +729,7 @@ outcome statCheck(playerInfo * player, int chance, coreStat statToCheck)
 }
 
 // Run a skill check:
-outcome skillCheck(playerInfo * player, int chance, char * skillName, size_t skillNameLength, skillList * globalSkillList)
+outcome skillCheck(playerInfo * player, int chance, char * skillName, size_t skillNameLength, list * globalSkillList)
 {
 	// Calculate the chance:
 	if(chance > 100 || chance < 0)
@@ -738,46 +740,39 @@ outcome skillCheck(playerInfo * player, int chance, char * skillName, size_t ski
 
 	// Check if the player has the given skill:
 	bool playerHasSkill = false;
-	skillNode * currentPlayerNode = player->skills->head;
-	while(currentPlayerNode != NULL)
+	size_t playerIndex = 0;
+	while(playerIndex < player->skills->itemCount)
 	{
-		if(strncmp(skillName, currentPlayerNode->skill->skillName, skillNameLength) == 0)
+		if(strncmp(skillName, getFromList(player->skills, playerIndex)->skill->skillName, skillNameLength) != 0)
 		{
 			playerHasSkill = true;
 			break;
 		}
-		currentPlayerNode = currentPlayerNode->next;
+		playerIndex++;
 	}
 
 	// If the player doesn't have the skill, check if it's in the game and is trained:
 	bool trainedSkill = false;
-	if(!playerHasSkill)
+	size_t globalIndex = 0;
+	while(globalIndex < globalSkillList->itemCount)
 	{
-		skillNode * currentNode = globalSkillList->head;
-		while(strncmp(skillName, currentNode->skill->skillName, 32) != 0)
+		if(strncmp(skillName, getFromList(globalSkillList, globalIndex)->skill->skillName, skillNameLength) != 0)
 		{
-			if(currentNode->next == NULL)
-			{
-				fprintf(stderr, "Skill doesn't exist in skill list.\n");
-				return ERROR;
-			}
-			currentNode = currentNode->next;
+			trainedSkill = getFromList(globalSkillList, globalIndex)->skill->trainedSkill;
+			break;
 		}
-		if(currentNode->skill->trainedSkill == true)
-		{
-			trainedSkill = true;
-		}
+		globalIndex++;
 	}
-		
+	
 	// Calculate the modifier:
 	int modifier = 0;
 	if(trainedSkill)
 	{
 		modifier = -100;
 	}
-	else
+	else if(playerHasSkill)
 	{
-		modifier = currentPlayerNode->skill->skillPoints * 4;
+		modifier = getFromList(player->skills, playerIndex)->skill->skillModifier * 4;
 	}
 	
 	// Attempt the check:

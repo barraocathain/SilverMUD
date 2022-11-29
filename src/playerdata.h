@@ -11,6 +11,8 @@
 // Let the compiler know there will be structs defined elsewhere:
 typedef struct playerPath playerPath;
 typedef struct playerArea playerArea;
+typedef struct list list;
+typedef struct listNode listNode;
 
 typedef struct statBlock
 {
@@ -42,25 +44,12 @@ typedef struct playerSkill
 	bool trainedSkill;
 } playerSkill;
 
-typedef struct skillNode skillNode;
-struct skillNode
-{
-	playerSkill * skill;
-	skillNode * next;
-};
-
-typedef struct skillList
-{
-	skillNode * head;
-	int skillCount;
-} skillList;
-
 typedef struct playerInfo
 {
 	char playerName[32];
 	playerArea * currentArea;
 	statBlock * stats;
-	skillList * skills; 
+	list * skills; 
 } playerInfo;
 
 typedef enum coreStat
@@ -74,18 +63,11 @@ typedef enum coreStat
 } coreStat;
 
 // Create a new skill and add it to the global skill list:
-int createSkill(skillList * globalSkillList, char * skillName, int skillNameLength, bool trainedSkill);
-
-// Add a skill node to a skill list:
-int addSkillNode(skillList * skillList, playerSkill * skill);
-
-// Remove a skill node from a skill list:
-int removeSkillNode(skillList * skillList, playerSkill * skill);
-int removeSkillByID(skillList * skillList, playerSkill * skill);
+listNode * createSkill(list * globalSkillList, char * skillName, int skillNameLength, bool trainedSkill);
 
 // Take a skill and add it to the player's skill list:
-int takeSkill(skillList * globalSkillList, char * skillName, int skillNameLength, playerInfo * targetPlayer); 
-int takeSkillbyID(skillList * globalSkillList, int skillID, playerInfo * targetPlayer);
+int takeSkill(list * globalSkillList, char * skillName, int skillNameLength, playerInfo * targetPlayer); 
+int takeSkillbyID(list * globalSkillList, int skillID, playerInfo * targetPlayer);
 
 // Take a string containing a core stat name and return the core stat:
 coreStat getCoreStatFromString(char * string, int stringLength);

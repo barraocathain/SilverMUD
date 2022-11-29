@@ -20,7 +20,7 @@ typedef struct gameLogicParameters
 	playerInfo * connectedPlayers;
 	inputMessageQueue * inputQueue;
 	outputMessageQueue * outputQueue;
-	skillList * globalSkillList;
+	list * globalSkillList;
 } gameLogicParameters;
 
 // Thread function which runs the main game loop, given the needed parameters:
@@ -90,6 +90,6 @@ typedef enum outcome
 outcome statCheck(playerInfo * player, int chance, coreStat statToCheck);
 
 // Run a skill check:
-outcome skillCheck(playerInfo * player, int chance, char * skillName, size_t skillNameLength, skillList * globalSkillList);
+outcome skillCheck(playerInfo * player, int chance, char * skillName, size_t skillNameLength, list * globalSkillList);
 
 #endif

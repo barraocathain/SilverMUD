@@ -94,8 +94,7 @@ int main(int argc, char ** argv)
   	createOneWayPath(getFromList(areas, 2)->area, getFromList(areas, 3)->area,
 					 "Continue to station interior. ");
 	
-	skillList * globalSkillList = malloc(sizeof(skillList));
-	globalSkillList->head = NULL;
+	list * globalSkillList = createList(SKILL);
 
 	// Create a few basic skills:
 	createSkill(globalSkillList, "Medicine", 8, true);
@@ -116,8 +115,7 @@ int main(int argc, char ** argv)
 		connectedPlayers[index].stats = calloc(1, sizeof(statBlock));
 		connectedPlayers[index].stats->specPoints = 30;
 		connectedPlayers[index].stats->skillPoints = 30;
-		connectedPlayers[index].skills = calloc(1, sizeof(skillList));
-		connectedPlayers[index].skills->head = NULL;
+		connectedPlayers[index].skills = createList(SKILL);
 	}
 
 	// -==[ TEST GAME-STATE INITIALIZATION END ]==-

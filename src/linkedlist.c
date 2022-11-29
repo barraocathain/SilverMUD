@@ -121,12 +121,24 @@ listNode * getNodeFromList(list * list, size_t listIndex)
 	// Loop through the entries in the list until we get to the right one:
 	else
 	{
-		listNode * currentNode = list->head;
-		while(listIndex-- > 0)
+		if((list->itemCount / 2) < listIndex)
 		{
-			currentNode = currentNode->next;
+			listNode * currentNode = list->tail;
+			while(listIndex-- > 0)
+			{
+				currentNode = currentNode->previous;
+			}
+			return currentNode;
 		}
-		return currentNode;
+		else
+		{
+			listNode * currentNode = list->head;
+			while(listIndex-- > 0)
+			{
+				currentNode = currentNode->next;
+			}
+			return currentNode;
+		}
 	}
 }
 

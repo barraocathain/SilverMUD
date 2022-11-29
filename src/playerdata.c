@@ -9,12 +9,12 @@
 #include "playerdata.h"
 
 // Create a new skill and add it to the global skill list:
-int createSkill(skillList * globalSkillList, char * skillName, int skillNameLength, bool trainedSkill)
+listNode * createSkill(list * globalSkillList, char * skillName, int skillNameLength, bool trainedSkill)
 {
 	if(skillNameLength >= 32)
 	{
 		fprintf(stderr, "Skill name is too long. Please shorten the name and try again.\n");
-		return -1;
+		return NULL;
 	}
 	playerSkill * newSkill = malloc(sizeof(playerSkill));
 	
@@ -26,112 +26,56 @@ int createSkill(skillList * globalSkillList, char * skillName, int skillNameLeng
 	newSkill->trainedSkill = trainedSkill;
 	
 	// Add the skill to a node in the list:
-	return(addSkillNode(globalSkillList, newSkill));
-}
-
-// Add a skill node to a skill list:
-int addSkillNode(skillList * skillList, playerSkill * skill)
-{
-	if(skillList->head == NULL)
-	{
-		skillList->head = malloc(sizeof(skillNode));
-		skillList->head->skill = skill;
-		skillList->head->next = NULL;
-		skillList->skillCount = 1;
-		return 0;
-	}
- 	else
-	{
-		skillNode * currentNode = skillList->head;	
-		while(currentNode->next != NULL)
-		{
-			currentNode = currentNode->next;
-		}
-		currentNode->next = malloc(sizeof(skillNode));
-		currentNode->next->skill = skill;
-		currentNode->next->next = NULL;
-		skillList->skillCount++;
-		return skillList->skillCount;		
-	}
-}
-
-// Remove a skill node from a skill list:
-int removeSkillNode(skillList * skillList, playerSkill * skill)
-{
-	// Check the validity of the pointers:
-	if(skillList->head == NULL || skill == NULL)
-	{
-		return -1;
-	}
-
-	if(skillList->head->skill == skill)
-	{
-		skillNode * newHead = skillList->head->next;
-		free(skillList->head->skill);
-		free(skillList->head);
-		skillList->head = newHead;
-		return 0;
-	}
-	
-	else
-	{
-		skillNode * currentNode = skillList->head;
-		skillNode * previousNode = skillList->head;
-		while(currentNode->skill != skill)
-		{
-			if(currentNode->next == NULL)
-			{
-				return -1;
-			}
-			previousNode = currentNode;
-			currentNode = currentNode->next;
-		}
-		free(currentNode->skill);
-		previousNode->next = currentNode->next;
-		free(currentNode);
-		return 0;
-	}	
+	return(addToList(globalSkillList, newSkill, SKILL));
 }
 
 // Take a skill and add it to the player's skill list:
-int takeSkill(skillList * globalSkillList, char * skillName, int skillNameLength, playerInfo * targetPlayer)
+int takeSkill(list * globalSkillList, char * skillName, int skillNameLength, playerInfo * targetPlayer)
 {
-	
-	skillNode * currentNode = globalSkillList->head;
-	while(strncmp(skillName, currentNode->skill->skillName, 32) != 0)
+	// Check if the skill exists in the game:
+	size_t globalIndex = 0;
+	bool skillExists = false;
+	while(globalIndex < globalSkillList->itemCount)
 	{
-		if(currentNode->next == NULL)
+		if(strncmp(skillName, getFromList(globalSkillList, globalIndex)->skill->skillName, skillNameLength) == 0)
 		{
-			fprintf(stderr, "Skill doesn't exist in skill list.\n");
-			return -1;
+			skillExists = true;
+			break;
 		}
-		currentNode = currentNode->next;
+		globalIndex++;
 	}
 
-	bool playerHasSkill = false;
-	skillNode * currentPlayerNode = targetPlayer->skills->head;
-	while(currentPlayerNode != NULL)
+	if(!skillExists)
 	{
-		if(strncmp(skillName, currentPlayerNode->skill->skillName, skillNameLength) == 0)
+		fprintf(stderr, "Skill doesn't exist in skill list.\n");
+		return -1;
+	}
+
+	// Check if the player has the skill:
+	size_t playerIndex = 0;
+	bool playerHasSkill = false;
+	while(playerIndex < targetPlayer->skills->itemCount)
+	{
+		if(strncmp(skillName, getFromList(targetPlayer->skills, playerIndex)->skill->skillName, skillNameLength) == 0)
 		{
 			playerHasSkill = true;
 			break;
 		}
-		currentPlayerNode = currentPlayerNode->next;
+		playerIndex++;
 	}
 	if(playerHasSkill)
 	{
-		currentPlayerNode->skill->skillPoints++;
+		getFromList(targetPlayer->skills, playerIndex)->skill->skillPoints++;
 	}
+
+	// Copy the skill into the player's skill list:
 	else
 	{
-		addSkillNode(targetPlayer->skills, currentNode->skill);
-		currentPlayerNode = targetPlayer->skills->head;
-		while(currentPlayerNode->next != NULL)
-		{
-			currentPlayerNode = currentPlayerNode->next;
-		}
-		currentPlayerNode->skill->skillPoints = 1;
+		playerSkill * newSkill = calloc(1, sizeof(playerSkill));
+		strncpy(newSkill->skillName, getFromList(globalSkillList, globalIndex)->skill->skillName, 32);
+		printf("%s ", newSkill->skillName);
+		newSkill->skillPoints = 1;
+		addToList(targetPlayer->skills, newSkill, SKILL);		
 	}
 	return 0;
 }
@@ -268,25 +212,7 @@ coreStat getCoreStatFromString(char * inputString, int stringLength)
 int deallocatePlayer(playerInfo * playerToDeallocate)
 {
 	// Deallocate the skill list:
-	if(playerToDeallocate->skills->skillCount > 0)
-	{
-		// Allocate enough pointers:
-		skillNode * nodesToDeallocate[playerToDeallocate->skills->skillCount];
-		skillNode * currentSkillNode = playerToDeallocate->skills->head;
-
-		// Get a list of all the nodes together:
-		for(int index = 0; index < playerToDeallocate->skills->skillCount; index++)
-		{
-			nodesToDeallocate[index] = currentSkillNode;
-			currentSkillNode = currentSkillNode->next;
-		}
-
-		// Deallocate all the nodes:
-		for(int index = 0; index < playerToDeallocate->skills->skillCount; index++)
-		{
-			free(nodesToDeallocate[index]);
-		}		
-	}
+	destroyList(&(playerToDeallocate->skills));
 
 	// Deallocate the stat block:
 	free(playerToDeallocate->stats);
