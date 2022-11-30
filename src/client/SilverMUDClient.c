@@ -26,6 +26,7 @@ typedef struct threadparameters
 	FILE * loggingStream;
 	bool loggingFlag;
 	WINDOW * window;
+	int characterDelay;
 } threadparameters;
 
 // Use sockaddr as a type:
@@ -100,17 +101,16 @@ void * messageReceiver(void * parameters)
 			}
 			if(serverMessage == false)
 			{
-				slowPrintNcurses("\n --====<>====--", 4000, threadParameters->window, true);
+				slowPrintNcurses("\n --====<>====--", threadParameters->characterDelay, threadParameters->window, true);
 				serverMessage = true;
 			}
-			slowPrintNcurses("\n", 4000, threadParameters->window, true);
-			slowPrintNcurses(receiveBuffer.messageContent, 4000, threadParameters->window, false);
-			slowPrintNcurses("\n", 4000, threadParameters->window, true);
+			slowPrintNcurses("\n", threadParameters->characterDelay, threadParameters->window, true);
+			slowPrintNcurses(receiveBuffer.messageContent, threadParameters->characterDelay, threadParameters->window, false);
+			slowPrintNcurses("\n", threadParameters->characterDelay, threadParameters->window, true);
 		}
 		else
 		{
-			wrapString(receiveBuffer.messageContent,
-					   strlen(receiveBuffer.messageContent) - 1,
+			wrapString(receiveBuffer.messageContent, strlen(receiveBuffer.messageContent) - 1,
 					   screenWidth - strlen(receiveBuffer.senderName) - 2);
 			if (threadParameters->loggingFlag == true)
 			{
@@ -121,12 +121,12 @@ void * messageReceiver(void * parameters)
 			}
 			if(serverMessage == true)
 			{
-				slowPrintNcurses("\n --====<>====-- \n", 4000, threadParameters->window, true);
+				slowPrintNcurses("\n --====<>====-- \n", threadParameters->characterDelay, threadParameters->window, true);
 				serverMessage = false;
 			}
-			slowPrintNcurses(receiveBuffer.senderName, 4000, threadParameters->window, true);
- 			slowPrintNcurses(": ", 4000, threadParameters->window, true);
-			slowPrintNcurses(receiveBuffer.messageContent, 4000, threadParameters->window, false);
+			slowPrintNcurses(receiveBuffer.senderName, threadParameters->characterDelay, threadParameters->window, true);
+ 			slowPrintNcurses(": ", threadParameters->characterDelay, threadParameters->window, true);
+			slowPrintNcurses(receiveBuffer.messageContent, threadParameters->characterDelay, threadParameters->window, false);
 		}
 	}
 	pthread_exit(NULL);
@@ -278,6 +278,7 @@ int main(int argc, char ** argv)
 	logArea->window = newwin(LINES - 5, COLS - 2, 1, 1);
 	logArea->tlsSession = tlsSession;
 	logArea->loggingFlag = chatLogging;
+	logArea->characterDelay = characterDelay;
 	if (chatLog != NULL)
 	{
 		logArea->loggingStream = chatLog;
