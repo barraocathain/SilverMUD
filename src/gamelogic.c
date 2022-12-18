@@ -136,6 +136,8 @@ int queueMessagedCommand(commandQueue * queue, inputMessage * messageToQueue)
 	// Check that we're not overflowing the queue:
 	if ((queue->currentLength + 1) > MAXQUEUELENGTH)
 	{
+		// Free the new command, it's getting dumped:
+		free(newCommand);
 		// Unlock the queue:
 		queue->lock = false;
 		return -1;

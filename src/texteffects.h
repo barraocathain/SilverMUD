@@ -33,4 +33,5 @@ char * logostring =
     "         #  #  ###  #####   #####  ###   #  #  # # ####  ###                /\n";
 
 void wrapString(char * stringToWrap, int stringLength, int screenWidth);
+
 #endif

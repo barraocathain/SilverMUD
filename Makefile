@@ -25,5 +25,5 @@ clean:
 
 all: clean SilverMUDClient SilverMUDServer
 all: CFLAGS += -Wall -Wextra -Ofast
-debug: CFLAGS += -Wall -Wextra -pg -ggdb -Og
+debug: CFLAGS += -Wall -Wextra -pg -ggdb -Og -D debug
 debug: clean SilverMUDClientDebug SilverMUDServerDebug

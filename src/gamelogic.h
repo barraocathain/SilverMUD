@@ -1,5 +1,4 @@
-// gamelogic.h: Header file contatning function prototypes and datastructures
-// for dealing with the game's logic.
+// gamelogic.h: Function prototypes and data-structures for dealing with game logic.
 // Barry Kane, 2022.
 #ifndef GAMELOGIC_H
 #define GAMELOGIC_H
@@ -12,7 +11,7 @@
 // -=[ Main Game Loop ]=-:
 // =======================
 
-// A datastructure containing the needed parameters for a main game loop:
+// A data-structure containing the needed parameters for a main game loop:
 typedef struct gameLogicParameters
 {
 	int * playerCount;

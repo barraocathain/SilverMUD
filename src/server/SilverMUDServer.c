@@ -29,7 +29,7 @@ typedef struct sockaddr sockaddr;
 void sigintHandler(int signal)
 {
 	printf("Caught signal %d.\n", signal);
-	exit(EXIT_SUCCESS);
+	_exit(EXIT_SUCCESS);
 }
 
 int main(int argc, char ** argv)

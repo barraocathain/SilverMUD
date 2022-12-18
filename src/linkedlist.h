@@ -47,9 +47,9 @@ typedef struct list
 	listNode * tail;
 } list;
 
-// ==================
-// -=[ Functions ]=-:
-// ==================
+// ========================
+// -=[    Functions    ]=-:
+// ========================
 
 // Allocates and instantiates a list of the specified type:
 list * createList(listDataType type);
