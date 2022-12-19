@@ -212,112 +212,6 @@ int dequeueOutputMessage(outputMessageQueue * queue)
 	}
 }
 
-inputMessageQueue * createInputMessageQueue(void)
-{
-	inputMessageQueue * newQueue = malloc(sizeof(inputMessageQueue));
-	newQueue->front = NULL;
-	newQueue->back = NULL;
-	newQueue->currentLength = 0;
-	newQueue->lock = false;
-	return newQueue;
-}
-
-int dequeueInputMessage(inputMessageQueue * queue)
-{
-	// Wait for the queue to unlock:
-	while (queue->lock);
-
-	// Lock the queue:
-	queue->lock = true;
-
-	// Check the list isn't empty:
-	if(queue->front == NULL)
-	{
-		queue->lock = false;
-		return -1;
-	}
-	
-	// If there is only one item in the queue:
-	else if(queue->front == queue->back)
-	{
-		free(queue->front->content);
-		free(queue->front);
-		queue->front = NULL;
-		queue->back = NULL;
-		queue->currentLength--;
-		queue->lock = false;
-		return 0;
-	}
-
-	// Remove the front item:
-	else
-	{
-		inputMessage * messageToDelete = queue->front;
-		queue->front = queue->front->next;
-		free(messageToDelete->content);
-		free(messageToDelete);
-		queue->currentLength--;
-		queue->lock = false;
-		return 0;
-	}
-}
-
-int queueInputMessage(inputMessageQueue * queue, userMessage messageToQueue, playerInfo * sendingPlayer)
-{
-	// Copy the message into a new input message:
-	inputMessage * input = malloc(sizeof(inputMessage));
-
-	// Allocate the internal userMessage to store the message:
-	input->content = malloc(sizeof(userMessage));
-
-	// Copy the userMessage to the internal userMessage:
-	strncpy(input->content->senderName, messageToQueue.senderName, 32);
-	strncpy(input->content->messageContent, messageToQueue.messageContent, MAX);
-
-	// We have no targets, NULL sends to all players in an area:
-	input->sender = sendingPlayer;	
-
-	// Wait for the queue to unlock:
-	while (queue->lock);
-
-	// Lock the queue:
-	queue->lock = true;
-
-	// Check that we're not overflowing the queue:
-	if ((queue->currentLength + 1) > MAXQUEUELENGTH)
-	{
-		// Unlock the queue:
-		queue->lock = false;
-		return -1;
-	}
-	else
-	{
-		// If the queue is empty, set the first message as both the front and back of the queue:
-		if(queue->front == NULL)
-		{
-			queue->front = input;
-			queue->back = input;
-			queue->currentLength++;
-			
-			// Unlock the queue:
-			queue->lock = false;
-
-			return 0;
-		}
-		else
-		{
-			queue->back->next = input;
-			queue->back = input;
-			queue->currentLength++;
-
-			// Unlock the queue:
-			queue->lock = false;
-
-			return 0;
-		}
-	}
-}
-
 void userInputSanatize(char * inputString, int length)
 {
 	for(int index = 0; index <= length; index++)
@@ -343,12 +237,6 @@ void userNameSanatize(char * inputString, int length)
 		}
 	}
 	inputString[length - 1] = '\0';
-}
-
-// Return the front inputMessage from an inputMessageQueue:
-inputMessage * peekInputMessage(inputMessageQueue * queue)
-{
-	return queue->front;
 }
 
 outputMessage * peekOutputMessage(outputMessageQueue * queue)

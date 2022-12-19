@@ -17,6 +17,7 @@
 #include <netinet/in.h>
 #include <gnutls/gnutls.h>
 
+#include "../queue.h"
 #include "../areadata.h"
 #include "../gamelogic.h"
 #include "../constants.h"
@@ -45,7 +46,7 @@ int main(int argc, char ** argv)
 	playerInfo connectedPlayers[PLAYERCOUNT];
 	char testString[32] = "Hehe.";
 	struct sockaddr_in serverAddress, clientAddress;
-	inputMessageQueue * inputQueue = createInputMessageQueue();
+	queue * inputQueue = createQueue();
 	outputMessageQueue * outputQueue = createOutputMessageQueue();
 
 	// Parse command-line options:
@@ -215,7 +216,7 @@ int main(int argc, char ** argv)
 	
 	while(true)
 	{
-		// Clear the set of file descriptors angad add the master socket:
+		// Clear the set of file descriptors and add the master socket:
 		FD_ZERO(&connectedClients);
 		FD_SET(socketFileDesc, &connectedClients);
 		clientsAmount = socketFileDesc;
@@ -275,7 +276,18 @@ int main(int argc, char ** argv)
 					strcpy(sendBuffer.messageContent, "Welcome to the server!");
 					messageSend(tlssessions[index], &sendBuffer);
 					strcpy(receiveBuffer.messageContent, "/look");
-					queueInputMessage(inputQueue, receiveBuffer, &connectedPlayers[index]);
+
+					// Allocate the memory for a new input message:
+					inputMessage * newMessage = malloc(sizeof(inputMessage));
+					newMessage->content = malloc(sizeof(userMessage));
+
+					// Copy in the correct data:
+					memcpy(newMessage->content, &receiveBuffer, sizeof(userMessage));
+					newMessage->sender = &connectedPlayers[index];
+
+					// Push the new message onto the queue:
+					pushQueue(inputQueue, newMessage, INPUT_MESSAGE);
+
 					break;  
 				}  
 			}  
@@ -315,7 +327,16 @@ int main(int argc, char ** argv)
 					// Otherwise, they've sent a message:
 					else 
 					{
-						queueInputMessage(inputQueue, receiveBuffer, &connectedPlayers[index]);
+						// Allocate the memory for a new input message:
+						inputMessage * newMessage = malloc(sizeof(inputMessage));
+						newMessage->content = malloc(sizeof(userMessage));
+
+						// Copy in the correct data:
+						memcpy(newMessage->content, &receiveBuffer, sizeof(userMessage));
+						newMessage->sender = &connectedPlayers[index];
+
+						// Push the new message onto the queue:
+						pushQueue(inputQueue, newMessage, INPUT_MESSAGE);
 					}
 				}			
 			}

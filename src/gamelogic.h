@@ -2,10 +2,14 @@
 // Barry Kane, 2022.
 #ifndef GAMELOGIC_H
 #define GAMELOGIC_H
+#include "queue.h"
 #include "areadata.h"
 #include "constants.h"
 #include "playerdata.h"
 #include "inputoutput.h"
+
+// Let the compiler know there will be structs defined elsewhere:
+typedef struct queue queue;
 
 // =======================
 // -=[ Main Game Loop ]=-:
@@ -17,7 +21,7 @@ typedef struct gameLogicParameters
 	int * playerCount;
 	list * areaList;
 	playerInfo * connectedPlayers;
-	inputMessageQueue * inputQueue;
+	queue * inputQueue;
 	outputMessageQueue * outputQueue;
 	list * globalSkillList;
 } gameLogicParameters;

@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include "queue.h"
 #include "constants.h"
 #include "gamelogic.h"
 #include "playerdata.h"
@@ -28,25 +29,21 @@ void * gameLogicLoop(void * parameters)
 		{
 			evaluateNextCommand(threadParameters, commandQueue);
 		}
+
 		// Check for new messages and pop them off the queue:
-		if(threadParameters->inputQueue->currentLength != 0)
+		if(threadParameters->inputQueue->itemCount != 0)
 		{
 			while(threadParameters->inputQueue->lock == true);
 			threadParameters->inputQueue->lock = true;
-			currentInput = peekInputMessage(threadParameters->inputQueue);
+			currentInput = peekQueue(threadParameters->inputQueue)->data.inputMessage;
 			userInputSanatize(currentInput->content->messageContent, MAX);
 			// A slash as the first character means the message is a user command:
 			if(currentInput->content->messageContent[0] == '/')
 			{
 				queueMessagedCommand(commandQueue, currentInput);
 			}
-			else if(currentInput->sender->currentArea == getFromList(threadParameters->areaList, 0)->area)
-			{ 
-				currentInput = NULL;
-				threadParameters->inputQueue->lock = false;
-				dequeueInputMessage(threadParameters->inputQueue);
-			}
-			else
+
+			else if (!(currentInput->sender->currentArea == getFromList(threadParameters->areaList, 0)->area))
 			{
 				strncpy(currentInput->content->senderName, currentInput->sender->playerName, 32);
 				// Create an array of players in the same area to receive the message:
@@ -72,7 +69,7 @@ void * gameLogicLoop(void * parameters)
 			}
 			currentInput = NULL;
 			threadParameters->inputQueue->lock = false;
-			dequeueInputMessage(threadParameters->inputQueue);
+			popQueue(threadParameters->inputQueue);
 		}
 	}
 	pthread_exit(NULL);

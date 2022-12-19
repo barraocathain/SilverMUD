@@ -67,31 +67,9 @@ outputMessage * peekOutputMessage(outputMessageQueue * queue);
 typedef struct inputMessage inputMessage;
 typedef struct inputMessage
 {
-	inputMessage * next;
 	playerInfo * sender;
 	userMessage * content;
 } inputMessage;
-
-// A first-in first-out queue for message input from players:
-typedef struct inputMessageQueue
-{
-	bool lock;
-	int currentLength;
-	inputMessage * back;
-	inputMessage * front;
-} inputMessageQueue;
-
-// Create a inputMessageQueue:
-inputMessageQueue * createInputMessageQueue(void);
-
-// Enqueue a userMessage to an inputMessageQueue:
-int queueInputMessage(inputMessageQueue * queue, userMessage messageToQueue, playerInfo * sendingPlayer);
-
-// Dequeue the front inputMessage from an inputMessageQueue:
-int dequeueInputMessage(inputMessageQueue * queue);
-
-// Return the front inputMessage from an inputMessageQueue:
-inputMessage * peekInputMessage(inputMessageQueue * queue);
 
 // =======================
 // -=[Input Sanitation]=-:
