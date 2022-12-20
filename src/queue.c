@@ -151,7 +151,7 @@ void pushQueue(queue * queue, void * data, queueDataType type)
 {
 	// Create a new node:
 	queueNode * newNode = malloc(sizeof(queueNode));
-
+	newNode->type = type;
 	// Copy the data into the correct slot for the type:
 	switch (type)
 	{

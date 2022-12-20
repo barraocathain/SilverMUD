@@ -43,28 +43,40 @@ void * gameLogicLoop(void * parameters)
 				queueMessagedCommand(commandQueue, currentInput);
 			}
 
-			else if (!(currentInput->sender->currentArea == getFromList(threadParameters->areaList, 0)->area))
+			else if (!(currentInput->sender->currentArea == getFromList(threadParameters->areaList, 0)->area) &&
+					 currentInput->content->messageContent[0] != '\n')
 			{
+				// Copy the correct name into the sender name field:
 				strncpy(currentInput->content->senderName, currentInput->sender->playerName, 32);
-				// Create an array of players in the same area to receive the message:
-				playerInfo ** recipients = malloc(sizeof(playerInfo*) * *threadParameters->playerCount);
-				for(int index = 0; index < *threadParameters->playerCount; index++)
+				currentInput->content->senderName[31] = '\0';
+
+				// Allocate an array of playerInfo to store the current players in the area for the output message:
+				playerInfo ** recipients = malloc(sizeof(playerInfo*) * PLAYERCOUNT);
+
+				// Initialize them all to NULL:
+				for (int index = 0; index < PLAYERCOUNT; index++)
 				{
 					recipients[index] = NULL;
 				}
-				int recipientCount = 0;
-				for(int playerIndex = 0; playerIndex < *threadParameters->playerCount; playerIndex++)
+
+				// Get the players in the current area and add them to our array:
+				int recipientIndex = 0;
+				for (int playerIndex = 0; playerIndex < *threadParameters->playerCount; playerIndex++)
 				{
-					if(threadParameters->connectedPlayers[playerIndex].currentArea == currentInput->sender->currentArea)
+					if (threadParameters->connectedPlayers[playerIndex].currentArea == currentInput->sender->currentArea)
 					{
-						recipients[recipientCount] = &threadParameters->connectedPlayers[playerIndex];
-						recipientCount++;
+						recipients[recipientIndex] = &threadParameters->connectedPlayers[playerIndex];
+						recipientIndex++;
 					}
 				}
-				if(currentInput->content->messageContent[0] != '\n')
-				{
-					queueTargetedOutputMessage(threadParameters->outputQueue, currentInput->content, recipients, recipientCount);
-				}
+
+				// Create the outputMessage for the queue:
+				outputMessage * newOutputMessage = createTargetedOutputMessage(currentInput->content, recipients, recipientIndex);
+
+				// Push the message onto the queue:
+				pushQueue(threadParameters->outputQueue, newOutputMessage, OUTPUT_MESSAGE);
+				
+				// Free the array;
 				free(recipients);
 			}
 			currentInput = NULL;
@@ -320,16 +332,31 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 				break;
 			}
 		}
-		queueTargetedOutputMessage(parameters->outputQueue, tryMessage, &currentCommand->caller, 1);
+
+		// Allocate an outputMessage for the queue:
+		outputMessage * tryOutputMessage = createTargetedOutputMessage(tryMessage, &currentCommand->caller, 1);
+
+		// Queue the outputMessage:
+		pushQueue(parameters->outputQueue, tryOutputMessage, OUTPUT_MESSAGE);
+
+		// Free the userMessage:
 		free(tryMessage);
 	}
 	// Exit command: Sends an "empty" exit message to disconnect a client:
 	if(strncmp(currentCommand->command, "exit", 4) == 0)
 	{
+		// Allocate a userMessage containing null characters as the first char in both fields:
 		userMessage * exitMessage = malloc(sizeof(userMessage));
 		exitMessage->senderName[0] = '\0';
 		exitMessage->messageContent[0] = '\0';
-		queueTargetedOutputMessage(parameters->outputQueue, exitMessage, &currentCommand->caller, 1);
+
+		// Allocate an outputMessage for the queue:
+		outputMessage * exitOutputMessage = createTargetedOutputMessage(exitMessage, &currentCommand->caller, 1);
+
+		// Queue the outputMessage:
+		pushQueue(parameters->outputQueue, exitOutputMessage, OUTPUT_MESSAGE);
+		
+		// Free the userMessage
 		free(exitMessage);
 	}
 
@@ -362,7 +389,14 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 		strncat(lookMessage->messageContent, currentCommand->caller->currentArea->areaName, 33);
 		strncat(lookMessage->messageContent, "\n", 2);
 		strncat(lookMessage->messageContent, currentCommand->caller->currentArea->areaDescription, MAX - 35);
-		queueTargetedOutputMessage(parameters->outputQueue, lookMessage, &currentCommand->caller, 1);
+
+		// Allocate an outputMessage for the queue:
+		outputMessage * lookOutputMessage = createTargetedOutputMessage(lookMessage, &currentCommand->caller, 1);
+
+		// Queue the outputMessage:
+		pushQueue(parameters->outputQueue, lookOutputMessage, OUTPUT_MESSAGE);
+
+		//queueTargetedOutputMessage(parameters->outputQueue, lookMessage, &currentCommand->caller, 1);
 		bzero(lookMessage, sizeof(userMessage));
 
 		// Loop through the paths and send the appropriate amount of messages:
@@ -375,7 +409,11 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 			{
 				if((charCount + 64) >= MAX)
 				{
-					queueTargetedOutputMessage(parameters->outputQueue, lookMessage, &currentCommand->caller, 1);
+					lookOutputMessage = createTargetedOutputMessage(lookMessage, &currentCommand->caller, 1);
+
+					// Queue the outputMessage:
+					pushQueue(parameters->outputQueue, lookOutputMessage, OUTPUT_MESSAGE);
+
 					bzero(lookMessage, sizeof(userMessage));
 					charCount = 0;
 				}
@@ -384,7 +422,11 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 				strncat(lookMessage->messageContent, formattedString, 64);
 				charCount += 64;
 			}	   
-			queueTargetedOutputMessage(parameters->outputQueue, lookMessage, &currentCommand->caller, 1);
+			// Allocate another outputMessage for the queue:
+			lookOutputMessage = createTargetedOutputMessage(lookMessage, &currentCommand->caller, 1);
+			
+			// Queue the outputMessage:
+			pushQueue(parameters->outputQueue, lookOutputMessage, OUTPUT_MESSAGE);
 		}
 		free(lookMessage);
 	}
@@ -423,14 +465,6 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 	{
 		// TODO: Implement.
 	}
-	if(strncmp(currentCommand->command, "skillissue", 10) == 0)
-	{
-		userMessage * statMessage = calloc(1, sizeof(userMessage));
-		statMessage->senderName[0] = '\0';
-		strcpy(statMessage->messageContent, "Have you tried getting good?");
-		queueTargetedOutputMessage(parameters->outputQueue, statMessage, &currentCommand->caller, 1);
-		free(statMessage);
-	}
 	// Stat command: Displays the current character's sheet.
 	if(strncmp(currentCommand->command, "stat", 4) == 0)
 	{
@@ -462,8 +496,13 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 			snprintf(formattedString, 120, "Current Experience: %ld", currentCommand->caller->stats->experience);
 		}
 		strncat(statMessage->messageContent, formattedString, 120);
+
+		// Allocate an outputMessage for the queue:
+		outputMessage * statOutputMessage = createTargetedOutputMessage(statMessage, &currentCommand->caller, 1);
+
+		// Queue the outputMessage:
+		pushQueue(parameters->outputQueue, statOutputMessage, OUTPUT_MESSAGE);
 		
-		queueTargetedOutputMessage(parameters->outputQueue, statMessage, &currentCommand->caller, 1);
 		bzero(statMessage->messageContent, sizeof(char) * MAX);
 		if(currentCommand->caller->skills->head != NULL)
 		{			
@@ -480,8 +519,11 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 				strncat(statMessage->messageContent, formattedString, 120);
 				if((charCount + 43) >= MAX)
 				{
-//					strncat(statMessage->messageContent, "\n", 2);
-					queueTargetedOutputMessage(parameters->outputQueue, statMessage, &currentCommand->caller, 1);
+					// Allocate an outputMessage for the queue:
+					statOutputMessage = createTargetedOutputMessage(statMessage, &currentCommand->caller, 1);
+
+					// Queue the outputMessage:
+					pushQueue(parameters->outputQueue, statOutputMessage, OUTPUT_MESSAGE);
 					bzero(statMessage, sizeof(userMessage));
 					charCount = 0;
 					break;
@@ -497,7 +539,11 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 					addNewline = true;
 				}		  
 			}
-			queueTargetedOutputMessage(parameters->outputQueue, statMessage, &currentCommand->caller, 1);
+			// Allocate an outputMessage for the queue:
+			statOutputMessage = createTargetedOutputMessage(statMessage, &currentCommand->caller, 1);
+
+			// Queue the outputMessage:
+			pushQueue(parameters->outputQueue, statOutputMessage, OUTPUT_MESSAGE);
 		}
 		free(statMessage);
 		free(formattedString);
@@ -570,8 +616,11 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 			strncat(specMessage->messageContent, "You have no spec points available.", 35);			
 		}
 		
-		// Send the message:
-		queueTargetedOutputMessage(parameters->outputQueue, specMessage, &currentCommand->caller, 1);
+		// Allocate an outputMessage for the queue:
+		outputMessage * specOutputMessage = createTargetedOutputMessage(specMessage, &currentCommand->caller, 1);
+
+		// Queue the outputMessage:
+		pushQueue(parameters->outputQueue, specOutputMessage, OUTPUT_MESSAGE);
 
 		// Show the new stat sheet:
 		queue->lock = false;
@@ -611,7 +660,13 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 		{
 			strcpy(skillMessage->messageContent, "You don't have enough skill points to take this skill.\n");
 		}
-		queueTargetedOutputMessage(parameters->outputQueue, skillMessage, &currentCommand->caller, 1);
+
+		// Allocate an outputMessage for the queue:
+		outputMessage * skillOutputMessage = createTargetedOutputMessage(skillMessage, &currentCommand->caller, 1);
+				
+		// Queue the outputMessage:
+		pushQueue(parameters->outputQueue, skillOutputMessage, OUTPUT_MESSAGE);
+		
 		free(skillMessage);
 	}
 	if(strncmp(currentCommand->command, "listskills", 10) == 0)
@@ -630,7 +685,12 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 			strncat(listMessage->messageContent, formattedString, 120);
 			if((charCount + 46) >= MAX)
 			{
-				queueTargetedOutputMessage(parameters->outputQueue, listMessage, &currentCommand->caller, 1);
+				// Allocate an outputMessage for the queue:
+				outputMessage * listOutputMessage = createTargetedOutputMessage(listMessage, &currentCommand->caller, 1);
+				
+				// Queue the outputMessage:
+				pushQueue(parameters->outputQueue, listOutputMessage, OUTPUT_MESSAGE);
+				
 				bzero(listMessage, sizeof(userMessage));
 				charCount = 0;
 				addNewline = false;
@@ -647,7 +707,11 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 			}
 			skillIndex++;
 		}
-		queueTargetedOutputMessage(parameters->outputQueue, listMessage, &currentCommand->caller, 1);
+		// Allocate an outputMessage for the queue:
+		outputMessage * listOutputMessage = createTargetedOutputMessage(listMessage, &currentCommand->caller, 1);
+				
+		// Queue the outputMessage:
+		pushQueue(parameters->outputQueue, listOutputMessage, OUTPUT_MESSAGE);
 		free(listMessage);
 		free(formattedString);
 	}

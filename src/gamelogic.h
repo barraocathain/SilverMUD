@@ -18,11 +18,16 @@ typedef struct queue queue;
 // A data-structure containing the needed parameters for a main game loop:
 typedef struct gameLogicParameters
 {
+	// Players:
 	int * playerCount;
-	list * areaList;
 	playerInfo * connectedPlayers;
+
+	// Queues:
 	queue * inputQueue;
-	outputMessageQueue * outputQueue;
+	queue * outputQueue;
+
+	// Lists:
+	list * areaList;
 	list * globalSkillList;
 } gameLogicParameters;
 

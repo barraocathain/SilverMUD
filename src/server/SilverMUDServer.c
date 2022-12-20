@@ -46,8 +46,7 @@ int main(int argc, char ** argv)
 	playerInfo connectedPlayers[PLAYERCOUNT];
 	char testString[32] = "Hehe.";
 	struct sockaddr_in serverAddress, clientAddress;
-	queue * inputQueue = createQueue();
-	outputMessageQueue * outputQueue = createOutputMessageQueue();
+	queue * inputQueue = createQueue(), * outputQueue = createQueue();
 
 	// Parse command-line options:
 	int currentopt = 0;
@@ -343,38 +342,47 @@ int main(int argc, char ** argv)
 		}
 
 		// Run through the output queue and send all unused messages:
-		while(outputQueue->currentLength != 0)
+		while(outputQueue->itemCount != 0)
 		{
+			// Wait until the queue unlocks:
 			while(outputQueue->lock);
+			
+			// Lock the queue:
 			outputQueue->lock = true;
-			outputMessage * message = peekOutputMessage(outputQueue);
+
+			// Get a message off the queue:
+			outputMessage * message = peekQueue(outputQueue)->data.outputMessage;
+
+			// Unlock the queue:
 			outputQueue->lock = false;
 			
 			// If the first target is set to NULL, it's intended for all connected:
-			if(message->targets[0] == NULL)
+			if(message->recipientsCount == 0)
 			{
 				for (int index = 0; index < PLAYERCOUNT; index++)  
 				{
 					messageSend(tlssessions[index], message->content);
 				}
 			}
+			// Otherwise, send it only to the targeted players:
 			else
 			{
 				int targetIndex = 0;
 				for(int index = 0; index < PLAYERCOUNT; index++)
 				{
-					if(message->targets[targetIndex] == NULL)
+					if(targetIndex == message->recipientsCount)
 					{
 						break;
 					}
-					if(&connectedPlayers[index] == message->targets[targetIndex])
+					if(&connectedPlayers[index] == message->recipients[targetIndex])
 					{
 						targetIndex++;
 						messageSend(tlssessions[index], message->content);
 					}
 				}
 			}
-			dequeueOutputMessage(outputQueue);
+			// Remove the output message from the queue:
+			popQueue(outputQueue);
 		}
 	}
 	pthread_cancel(gameLogicThread);

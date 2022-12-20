@@ -33,33 +33,13 @@ int messageReceive(gnutls_session_t receiveFromSession, userMessage * receiveToM
 typedef struct outputMessage outputMessage;
 typedef struct outputMessage
 {
-	outputMessage * next;
-	playerInfo * targets[PLAYERCOUNT];
+	int recipientsCount;
 	userMessage * content;
+	playerInfo ** recipients;
 } outputMessage;
 
-// A first-in first-out queue for message output to players:
-typedef struct outputMessageQueue
-{
-	bool lock;
-	int currentLength;
-	outputMessage * back;
-	outputMessage * front;
-} outputMessageQueue;
-
-// Creates and initializes a outputMessageQueue:
-outputMessageQueue * createOutputMessageQueue(void);
-
-// Enqueue a userMessage to an outputMessageQueue:
-int queueOutputMessage(outputMessageQueue * queue, userMessage messageToQueue);
-int queueTargetedOutputMessage(outputMessageQueue * queue, userMessage *  messageToQueue,
-							   playerInfo ** targets, int numberOfTargets);
-
-// Dequeue the front outputMessage from an outputMessageQueue:
-int dequeueOutputMessage(outputMessageQueue * queue);
-
-// Return the front outputMessage from an outputMessageQueue:
-outputMessage * peekOutputMessage(outputMessageQueue * queue);
+// Create a targetedOutput message to be delivered to the players pointed to in recipients:
+outputMessage * createTargetedOutputMessage(userMessage * messageToQueue, playerInfo ** recipients, int recipientCount);
 
 // ==================
 // -=[Input Queue]=-:
