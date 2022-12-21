@@ -5,7 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <pthread.h>
 #include <gnutls/gnutls.h>
+
+#include "queue.h"
 #include "constants.h"
 #include "playerdata.h"
 #include "inputoutput.h"
@@ -46,6 +49,7 @@ int messageReceive(gnutls_session_t receiveFromSession, userMessage * receiveToM
 	return returnValue;
 }
 
+// Allocate and initialize an outputMessage targeted to a variable amount of players:
 outputMessage * createTargetedOutputMessage(userMessage * messageToQueue, playerInfo ** recipients, int recipientsCount)
 {
 	// Allocate a new output message:
@@ -64,10 +68,72 @@ outputMessage * createTargetedOutputMessage(userMessage * messageToQueue, player
 	return newOutputMessage;
 }
 
+// A function for the output thread, which sends queued messages:
+void * outputThreadHandler(void * parameters)
+{
+	outputThreadParameters * variables = parameters;
+   	queue * outputQueue = variables->outputQueue;
+	gnutls_session_t * tlssessions = variables->tlssessions;
+	playerInfo * connectedPlayers = variables->connectedPlayers;
+	
+	while(true)
+	{
+		if(outputQueue->itemCount == 0)
+		{
+			pthread_cond_wait(&outputQueue->condition, &outputQueue->mutex);
+		}
+		// Run through the output queue and send all unused messages:
+		while(outputQueue->itemCount != 0)
+		{
+			// Wait until the queue unlocks:
+			while(outputQueue->lock);
+			
+			// Lock the queue:
+			outputQueue->lock = true;
+
+			// Get a message off the queue:
+			outputMessage * message = peekQueue(outputQueue)->data.outputMessage;
+
+			// Unlock the queue:
+			outputQueue->lock = false;
+			
+			// If the first target is set to NULL, it's intended for all connected:
+			if(message->recipientsCount == 0)
+			{
+				for (int index = 0; index < PLAYERCOUNT; index++)  
+				{
+					messageSend(tlssessions[index], message->content);
+				}
+			}
+			// Otherwise, send it only to the targeted players:
+			else
+			{
+				int targetIndex = 0;
+				for(int index = 0; index < PLAYERCOUNT; index++)
+				{
+					if(targetIndex == message->recipientsCount)
+					{
+						break;
+					}
+					if(&connectedPlayers[index] == message->recipients[targetIndex])
+					{
+						targetIndex++;
+						messageSend(tlssessions[index], message->content);
+					}
+				}
+			}
+			// Remove the output message from the queue:
+			popQueue(outputQueue);
+		}
+	}		
+}
+
+// Sanatize user input to ensure it's okay to process:
 void userInputSanatize(char * inputString, int length)
 {
 	for(int index = 0; index <= length; index++)
 	{
+		// If it's not a printable character, it has no buisness being here:
 		if(!isprint(inputString[index]))
 		{
 			inputString[index] = '\n';
@@ -75,18 +141,22 @@ void userInputSanatize(char * inputString, int length)
 			break;
 		}
 	}
+	// Make sure it's null-terminated:
 	inputString[length - 1] = '\0';
 }
 
+// Sanatize user names so they display correctly;
 void userNameSanatize(char * inputString, int length)
 {
 	for(int index = 0; index <= length; index++)
 	{
+		// If it's not a printable character, it has no buisness being here:
 		if(!isprint(inputString[index]))
 		{
 			inputString[index] = '\0';
 			break;
 		}
 	}
+	// Make sure it's null-terminated:
 	inputString[length - 1] = '\0';
 }

@@ -1,5 +1,6 @@
 // queue.c: Implements the queue data type and associated functions for SilverMUD.
 // Barry Kane, 2022
+#include <pthread.h>
 #include "queue.h"
 
 // Allocates and instantiates a queue:
@@ -13,6 +14,10 @@ queue * createQueue(void)
 	newQueue->front = NULL;
 	newQueue->back = NULL;
 
+	// Create the threading constructs:
+	newQueue->mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;   
+	newQueue->condition = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+	
 	// Return the pointer to the new queue:
 	return newQueue;
 }
@@ -27,7 +32,10 @@ void destroyQueue(queue ** queue)
 	}
 
 	// Deallocate the queue:
-	free(*queue);	
+	free(*queue);
+
+	// Point the queue pointer to NULL;
+	*queue = NULL;
 }
 
 // Returns the data at the front of the given queue:
@@ -41,7 +49,7 @@ void popQueue(queue * queue)
 {
 	// Check if the queue is locked, and wait:
 	while (queue->lock);
-
+	
 	// Lock the queue:
 	queue->lock = true;
 
@@ -203,4 +211,7 @@ void pushQueue(queue * queue, void * data, queueDataType type)
 
 	// Unlock the queue:
 	queue->lock = false;
+
+	// Flag that the queue was modified:
+	pthread_cond_broadcast(&queue->condition);
 }

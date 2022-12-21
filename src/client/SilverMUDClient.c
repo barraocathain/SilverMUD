@@ -14,6 +14,7 @@
 #include <sys/socket.h>
 #include <gnutls/gnutls.h>
 
+#include "../queue.h"
 #include "../constants.h"
 #include "../playerdata.h"
 #include "../texteffects.h"
@@ -225,7 +226,7 @@ int main(int argc, char ** argv)
 	serverAddress.sin_port = htons(port);
   
 	// Connect the server and client sockets, Kronk:
-         	if (connect(socketFileDesc, (sockaddr*)&serverAddress, sizeof(serverAddress)) != 0)
+	if (connect(socketFileDesc, (sockaddr*)&serverAddress, sizeof(serverAddress)) != 0)
 	{
 		slowPrint("Connection with the Silverkin Industries Comm-Link Server Failed:\nPlease contact your service representative.\n", characterDelay);
 		exit(0);

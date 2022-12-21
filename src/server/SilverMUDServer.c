@@ -40,7 +40,7 @@ int main(int argc, char ** argv)
 	int socketFileDesc, connectionFileDesc, length, clientsAmount,
 		socketCheck, activityCheck, returnVal;
 	fd_set connectedClients;
-	pthread_t gameLogicThread;
+	pthread_t gameLogicThread, outputThread;
 	int clientSockets[PLAYERCOUNT];
 	userMessage sendBuffer, receiveBuffer;
 	playerInfo connectedPlayers[PLAYERCOUNT];
@@ -54,11 +54,11 @@ int main(int argc, char ** argv)
 	{
 		switch(currentopt)
 		{
-			case 'd':
-			{
-				delay = atoi(optarg);
-				break;
-			}
+		case 'd':
+		{
+			delay = atoi(optarg);
+			break;
+		}
 		}
 	}
 	
@@ -146,7 +146,6 @@ int main(int argc, char ** argv)
 		slowPrint("\tSocket Creation is:\t\033[32;40mGREEN.\033[0m\n", delay);
 	}
 
-	// 
 	bzero(&serverAddress, sizeof(serverAddress));
   
 	// Assign IP and port:
@@ -207,11 +206,19 @@ int main(int argc, char ** argv)
 	gameLogicThreadParameters->outputQueue = outputQueue;
 	gameLogicThreadParameters->inputQueue = inputQueue;
 	gameLogicThreadParameters->areaList = areas;
-	pthread_create(&gameLogicThread, NULL, &gameLogicLoop, gameLogicThreadParameters);
+	pthread_create(&gameLogicThread, NULL, &gameLogicHandler, gameLogicThreadParameters);
 
 	slowPrint("\tEvent Thread is:\t\033[32;40mGREEN.\033[0m\n", delay);
-	slowPrint("=====\n", delay); 
-	struct timeval timeout = {0, 500};
+	
+	// Prepare the output queue thread:
+	outputThreadParameters * outputParameters = malloc(sizeof(outputThreadParameters));
+	outputParameters->outputQueue = outputQueue;
+	outputParameters->tlssessions = tlssessions;
+	outputParameters->connectedPlayers = connectedPlayers;
+	pthread_create(&outputThread, NULL, &outputThreadHandler, outputParameters);
+
+	slowPrint("\tOutput Thread is:\t\033[32;40mGREEN.\033[0m\n", delay);
+	slowPrint("=====\n", delay);
 	
 	while(true)
 	{
@@ -239,7 +246,7 @@ int main(int argc, char ** argv)
 		}
 
 		// See if a connection is ready to be interacted with:
-		activityCheck = select((clientsAmount + 1), &connectedClients, NULL, NULL, &timeout);
+		activityCheck = select((clientsAmount + 1), &connectedClients, NULL, NULL, NULL);
 
 		// Check if select() worked:
 		if ((activityCheck < 0) && (errno != EINTR))  
@@ -286,7 +293,6 @@ int main(int argc, char ** argv)
 
 					// Push the new message onto the queue:
 					pushQueue(inputQueue, newMessage, INPUT_MESSAGE);
-
 					break;  
 				}  
 			}  
@@ -340,52 +346,8 @@ int main(int argc, char ** argv)
 				}			
 			}
 		}
-
-		// Run through the output queue and send all unused messages:
-		while(outputQueue->itemCount != 0)
-		{
-			// Wait until the queue unlocks:
-			while(outputQueue->lock);
-			
-			// Lock the queue:
-			outputQueue->lock = true;
-
-			// Get a message off the queue:
-			outputMessage * message = peekQueue(outputQueue)->data.outputMessage;
-
-			// Unlock the queue:
-			outputQueue->lock = false;
-			
-			// If the first target is set to NULL, it's intended for all connected:
-			if(message->recipientsCount == 0)
-			{
-				for (int index = 0; index < PLAYERCOUNT; index++)  
-				{
-					messageSend(tlssessions[index], message->content);
-				}
-			}
-			// Otherwise, send it only to the targeted players:
-			else
-			{
-				int targetIndex = 0;
-				for(int index = 0; index < PLAYERCOUNT; index++)
-				{
-					if(targetIndex == message->recipientsCount)
-					{
-						break;
-					}
-					if(&connectedPlayers[index] == message->recipients[targetIndex])
-					{
-						targetIndex++;
-						messageSend(tlssessions[index], message->content);
-					}
-				}
-			}
-			// Remove the output message from the queue:
-			popQueue(outputQueue);
-		}
 	}
 	pthread_cancel(gameLogicThread);
+	pthread_cancel(outputThread);
 	exit(EXIT_SUCCESS);
 }
-

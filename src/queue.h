@@ -9,6 +9,9 @@
 // -=[ Data Structures ]=-:
 // ========================
 
+// Let the compiler know there will be structs defined elsewhere:
+typedef struct queue queue;
+
 typedef enum queueDataType
 {
 	EVENT,
@@ -38,6 +41,8 @@ typedef struct queue
 	size_t itemCount;
 	queueNode * front;
 	queueNode * back;
+	pthread_mutex_t mutex;
+	pthread_cond_t condition;
 } queue;
 
 // ========================

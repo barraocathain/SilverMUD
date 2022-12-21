@@ -8,35 +8,10 @@
 #include "playerdata.h"
 #include "inputoutput.h"
 
-// Let the compiler know there will be structs defined elsewhere:
-typedef struct queue queue;
+// ========================
+// -=[ Data Structures ]=-:
+// ========================
 
-// =======================
-// -=[ Main Game Loop ]=-:
-// =======================
-
-// A data-structure containing the needed parameters for a main game loop:
-typedef struct gameLogicParameters
-{
-	// Players:
-	int * playerCount;
-	playerInfo * connectedPlayers;
-
-	// Queues:
-	queue * inputQueue;
-	queue * outputQueue;
-
-	// Lists:
-	list * areaList;
-	list * globalSkillList;
-} gameLogicParameters;
-
-// Thread function which runs the main game loop, given the needed parameters:
-void * gameLogicLoop(void * parameters);
-
-// ======================
-// -=[ Command Queue ]=-:
-// ======================
 typedef struct commandEvent commandEvent;
 typedef struct commandEvent
 {
@@ -55,6 +30,32 @@ typedef struct commandQueue
 	commandEvent * back;
 	commandEvent * front;
 } commandQueue;
+
+// A data-structure containing the needed parameters for a main game loop:
+typedef struct gameLogicParameters
+{
+	// Players:
+	int * playerCount;
+	playerInfo * connectedPlayers;
+
+	// Queues:
+	queue * inputQueue;
+	queue * outputQueue;
+
+	// Lists:
+	list * areaList;
+	list * globalSkillList;
+} gameLogicParameters;
+
+// ========================
+// -=[    Functions    ]=-:
+// ========================
+
+// Player movement:
+int movePlayerToArea(playerInfo * player, char * requestedPath);
+
+// Thread function which runs the main game loop, given the needed parameters:
+void * gameLogicHandler(void * parameters);
 
 // Create a commandQueue:
 commandQueue * createCommandQueue(void);
@@ -82,9 +83,6 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue);
 // -=[ Gameplay Primitives ]=-:
 // ============================
 
-// Player movement:
-int movePlayerToArea(playerInfo * player, char * requestedPath);
-
 typedef enum outcome
 {
 	CRITICAL_FAILURE,
@@ -93,6 +91,9 @@ typedef enum outcome
 	CRITICAL_SUCCESS,
 	ERROR
 } outcome;
+
+// Player movement:
+int movePlayerToArea(playerInfo * player, char * requestedPath);
 
 // Run a stat check:
 outcome statCheck(playerInfo * player, int chance, coreStat statToCheck);

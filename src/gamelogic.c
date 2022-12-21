@@ -17,7 +17,7 @@
 // =======================
 
 // Thread function which runs the main game loop, given the needed parameters:
-void * gameLogicLoop(void * parameters)
+void * gameLogicHandler(void * parameters)
 {
 	gameLogicParameters * threadParameters = parameters;
 	inputMessage * currentInput = NULL;
@@ -25,11 +25,17 @@ void * gameLogicLoop(void * parameters)
 	while(true)
 	{
 		// Evaluate remaining commands:
-		if(commandQueue->currentLength != 0)
+		while(commandQueue->currentLength != 0)
 		{
 			evaluateNextCommand(threadParameters, commandQueue);
 		}
 
+		// Wait if there is nothing to do:
+		if(threadParameters->inputQueue->itemCount == 0)
+		{
+			pthread_cond_wait(&threadParameters->inputQueue->condition, &threadParameters->inputQueue->mutex);
+		}
+		
 		// Check for new messages and pop them off the queue:
 		if(threadParameters->inputQueue->itemCount != 0)
 		{
