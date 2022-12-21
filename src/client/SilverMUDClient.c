@@ -20,7 +20,7 @@
 #include "../texteffects.h"
 #include "../inputoutput.h"
 
-// A struct for bundling all needed paramaters for a thread so we can pass them using a void pointer:
+// A struct for bundling all needed parameters for a thread so we can pass them using a void pointer:
 typedef struct threadparameters
 {
 	gnutls_session_t tlsSession;
@@ -36,17 +36,22 @@ typedef struct sockaddr sockaddr;
 // A globally available exit boolean:
 bool shouldExit = false;
 
+// A function for managing the sending thread:
 void * messageSender(void * parameters)	
 {
-	struct threadparameters *threadParameters = parameters;
+	threadparameters * threadParameters = parameters;
+	gnutls_session_t tlsSession = threadParameters->tlsSession;
+	FILE * loggingStream = threadParameters->loggingStream;
+	bool loggingFlag = threadParameters->loggingFlag;
+	WINDOW * window = threadParameters->window;
 	userMessage sendBuffer;
 
 	// Repeatedly get input from the user, place it in a userMessage, and send it to the server:
 	while (!shouldExit)
 	{
 		// Print the prompt:
-		wprintw(threadParameters->window, "\n\n\nCOMM-LINK> ");
-		if (wgetnstr(threadParameters->window, sendBuffer.messageContent, MAX) == ERR)
+		wprintw(window, "\n\n\nCOMM-LINK> ");
+		if (wgetnstr(window, sendBuffer.messageContent, MAX) == ERR)
 		{
 			// Quit if there's any funny business with getting input:
 			pthread_exit(NULL);
@@ -59,77 +64,104 @@ void * messageSender(void * parameters)
 		}
 		
 		// Send the message to the log if logging is enabled:
-		if (threadParameters->loggingFlag == true)
+		if (loggingFlag == true)
 		{
-			fputs(sendBuffer.messageContent, threadParameters->loggingStream);
-			fputs("\n", threadParameters->loggingStream);
-			fflush(threadParameters->loggingStream);
+			fputs(sendBuffer.messageContent, loggingStream);
+			fputs("\n", loggingStream);
+			fflush(loggingStream);
 		}
 
 		// Send the message off to the server:
-		messageSend(threadParameters->tlsSession, &sendBuffer);		
+		messageSend(tlsSession, &sendBuffer);		
 	}
 
 	// Rejoin the main thread:
 	pthread_exit(NULL);
 }
 
+// A function for managing the receiving thread:
 void * messageReceiver(void * parameters)
 {
+	threadparameters * threadParameters = parameters;
+	gnutls_session_t tlsSession = threadParameters->tlsSession;
+	FILE * loggingStream = threadParameters->loggingStream;
+	int characterDelay = threadParameters->characterDelay;
+	bool loggingFlag = threadParameters->loggingFlag;
+	WINDOW * window = threadParameters->window;
+
 	int returnValue = 0;
 	userMessage receiveBuffer;
 	bool serverMessage = false;
-	struct threadparameters *threadParameters = parameters;
 	int screenWidth = getmaxx(threadParameters->window);
 	
 	// Repeatedly take messages from the server and print them to the chat log window:
 	while (!shouldExit) 
 	{
-		returnValue = messageReceive(threadParameters->tlsSession, &receiveBuffer);
+		// Get the next message:
+		returnValue = messageReceive(tlsSession, &receiveBuffer);
+		
 		// Check we haven't been disconnected:
-		if(returnValue == -10 || returnValue == 0)
+		if (returnValue == -10 || returnValue == 0)
 		{
 			shouldExit = true;
 		}
+
+		// Check if it's a server message:
 		else if (receiveBuffer.senderName[0] == '\0')
 		{
-			wrapString(receiveBuffer.messageContent,
-					   strlen(receiveBuffer.messageContent) - 1, screenWidth);
+			// Check if it's a command to disconnect:
 			if (receiveBuffer.messageContent[0] == '\0') 
 			{ 
 				shouldExit = true; 
 				pthread_exit(NULL); 
 			}
-			if(serverMessage == false)
+			
+			// Fit the string to the screen:
+			wrapString(receiveBuffer.messageContent, strlen(receiveBuffer.messageContent) - 1, screenWidth);
+
+			// If it's the first server message in a block, begin a block of server messages:
+			if (serverMessage == false)
 			{
-				slowPrintNcurses("\n --====<>====--", threadParameters->characterDelay, threadParameters->window, true);
+				slowPrintNcurses("\n --====<>====--", characterDelay, window, true);
 				serverMessage = true;
 			}
-			slowPrintNcurses("\n", threadParameters->characterDelay, threadParameters->window, true);
-			slowPrintNcurses(receiveBuffer.messageContent, threadParameters->characterDelay, threadParameters->window, false);
-			slowPrintNcurses("\n", threadParameters->characterDelay, threadParameters->window, true);
+
+			// Print the message:
+			slowPrintNcurses("\n", characterDelay, window, true);
+			slowPrintNcurses(receiveBuffer.messageContent, characterDelay,
+							 window, false);
+			slowPrintNcurses("\n", characterDelay, window, true);
 		}
+		// It's a user message:
 		else
 		{
+			// Fit the string to the screen:
 			wrapString(receiveBuffer.messageContent, strlen(receiveBuffer.messageContent) - 1,
 					   screenWidth - strlen(receiveBuffer.senderName) - 2);
-			if (threadParameters->loggingFlag == true)
+
+			// If the user has requested logging, insert the message into the file:
+			if (loggingFlag == true)
 			{
-				fputs(receiveBuffer.senderName, threadParameters->loggingStream);
-				fputs(": ", threadParameters->loggingStream);
-				fputs(receiveBuffer.messageContent, threadParameters->loggingStream);
-				fflush(threadParameters->loggingStream);
+				fputs(receiveBuffer.senderName, loggingStream);
+				fputs(": ", loggingStream);
+				fputs(receiveBuffer.messageContent, loggingStream);
+				fflush(loggingStream);
 			}
-			if(serverMessage == true)
+
+			// If we're in a block of server messages, end it:
+			if (serverMessage == true)
 			{
-				slowPrintNcurses("\n --====<>====-- \n", threadParameters->characterDelay, threadParameters->window, true);
+				slowPrintNcurses("\n --====<>====-- \n", characterDelay, window, true);
 				serverMessage = false;
 			}
-			slowPrintNcurses(receiveBuffer.senderName, threadParameters->characterDelay, threadParameters->window, true);
- 			slowPrintNcurses(": ", threadParameters->characterDelay, threadParameters->window, true);
-			slowPrintNcurses(receiveBuffer.messageContent, threadParameters->characterDelay, threadParameters->window, false);
+			
+			// Print the message:
+			slowPrintNcurses(receiveBuffer.senderName, characterDelay, window, true);
+ 			slowPrintNcurses(": ", characterDelay, window, true);
+			slowPrintNcurses(receiveBuffer.messageContent, characterDelay, window, false);
 		}
 	}
+	// Exit the thread if shouldExit is true:
 	pthread_exit(NULL);
 }
 	
@@ -156,54 +188,54 @@ int main(int argc, char ** argv)
 	{
 		switch (currentopt)
 		{
-		case 'i':
-          		{
-			memcpy(ipAddress, optarg, 32);
-			break;
-		}
-		case 'c':
-		{
-			memcpy(chatLogPath, optarg, PATH_MAX + 1);
-			chatLog = fopen(chatLogPath, "a+");
-			if (chatLog == NULL)
+			case 'i':
 			{
-				chatLogging = false;
+				memcpy(ipAddress, optarg, 32);
+				break;
 			}
-			else
+			case 'c':
 			{
-				chatLogging = true;
+				memcpy(chatLogPath, optarg, PATH_MAX + 1);
+				chatLog = fopen(chatLogPath, "a+");
+				if (chatLog == NULL)
+				{
+					chatLogging = false;
+				}
+				else
+				{
+					chatLogging = true;
+				}
+				break;
 			}
-			break;
-		}
-		case 'g':
-		{
-			memcpy(gameLogPath, optarg, PATH_MAX + 1);
-			gameLog = fopen(gameLogPath, "a+");
-			if (gameLog == NULL)
+			case 'g':
 			{
-				gameLogging = false;
+				memcpy(gameLogPath, optarg, PATH_MAX + 1);
+				gameLog = fopen(gameLogPath, "a+");
+				if (gameLog == NULL)
+				{
+					gameLogging = false;
+				}
+				else
+				{
+					gameLogging = true;
+				}
+				break;
 			}
-			else
+			case 'p':
 			{
-				gameLogging = true;
+				port = atoi(optarg);
+				break;
 			}
-			break;
-		}
-		case 'p':
-		{
-			port = atoi(optarg);
-			break;
-  		}
-		case 'd':
-		{
-			characterDelay = atoi(optarg);
-			break;
-		}
-		case '?':
-		{
-			return 1;
-			break;
-		}
+			case 'd':
+			{
+				characterDelay = atoi(optarg);
+				break;
+			}
+			case '?':
+			{
+				return 1;
+				break;
+			}
 		}
 	}
 
@@ -218,9 +250,8 @@ int main(int argc, char ** argv)
 	{
 		slowPrint("Socket successfully created.\n", characterDelay);
 	}
-	bzero(&serverAddress, sizeof(serverAddress));
   
-	// Set our IP Address and port. Default to localhost for testing:
+	// Set our IP address and port. Default to localhost for testing:
 	serverAddress.sin_family = AF_INET;
 	serverAddress.sin_addr.s_addr = inet_addr(ipAddress);
 	serverAddress.sin_port = htons(port);
@@ -231,17 +262,11 @@ int main(int argc, char ** argv)
 		slowPrint("Connection with the Silverkin Industries Comm-Link Server Failed:\nPlease contact your service representative.\n", characterDelay);
 		exit(0);
 	}
-	else
-	{
-		slowPrint("Connected to the Silverkin Industries Comm-Link Server:\nHave a pleasant day.\n", characterDelay);
-	}
-	usleep(100000);
 
 	// Setup a GnuTLS session and initialize it:
 	gnutls_session_t tlsSession = NULL;
 	if (gnutls_init(&tlsSession,  GNUTLS_CLIENT) < 0)
-	{
-		// Failure Case
+	{	
 		exit(EXIT_FAILURE);
 	}
 

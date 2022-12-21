@@ -1,28 +1,65 @@
+#+LATEX_HEADER: \RequirePackage[left=0.3in,top=0.3in,right=0.3in,bottom=0.3in, a4paper]{geometry}
 * SilverMUD: The Hackable Terminal-Top Roleplaying Game.
 SilverMUD is a tool for creating engaging and communal stories, all over the
 world through the internet. It's designed to give a gamemaster the same power
 to improvise that they have at the table, through simple programming and
 easy-to-understand structures.
-** Player's Guide
-*** The Basic Commands
+
+* Player's Guide
+** The Basic Commands
 SilverMUD is played through a set of very simple commands. To use a command,
 type a forward-slash (/) followed immediately by the command name. The command
 can be upper or lower-case.
 
-| Command | Arguments                                         | Effect                                                             |
-|---------+---------------------------------------------------+--------------------------------------------------------------------|
-| JOIN    | Takes a character name                            | Logs you into the server with the given character name.            |
-| MOVE    | Takes a path name or a path number                | Moves you down the given path.                                     |
-| LOOK    | None                                              | Gives you a description of what's around you, and what you can do. |
-| STAT    | None                                              | Displays your current status and character sheet.                  |
-| SPEC    | Core stat name                                    | Allows you to apply spec points to a given stat.                   |
-| TRY     | Core stat name or skill name and an object number | Attempt to use the given stat or skill on the object.              |
+| Command | Arguments                                | Effect                                                  |
+|---------+------------------------------------------+---------------------------------------------------------|
+| JOIN    | Character Name                           | Logs you into the server with the given character name. |
+| MOVE    | Path Name/Path Number                    | Moves you down the given path.                          |
+| LOOK    | None                                     | Describes the current area.                             |
+| STAT    | None                                     | Displays your current status and character sheet.       |
+| SPEC    | Core Stat Name                           | Allows you to apply spec points to a given stat.        |
+| TRY     | Core Stat Name/Skill Name, Object Number | Attempt to use the given stat or skill on the object.   |
 
-** Gamemaster's Guide
-*** Running the Server:
+* Gamemaster's Guide
+** Running the Server:
 
-** Developer's Guide
-*** Build Prerequisites:
+* Developer's Guide
+** Build Prerequisites:
 SilverMUD has the following dependencies:
 - GnuTLS
 - ncurses
+
+** C Style Guide:
+These rules attempt to make the program as visually clear as possible, while
+some rules may be made based on my own personal tastes.
+
+- () :: These are parentheses.
+- [] :: These are brackets.
+- {} :: These are braces.
+*** Formatting:
+**** Control Statements:
+- A space should be between the keyword and the condition. This is to make
+  control statements visually distinct from function calls.
+  
+- Opening braces should be on the line after the control statement, and closing
+  braces on the line after the last statement, on it's own. This is to make the
+  scope of the control statement easily identifiable.
+  
+- else and else if should always be on a new line, not the same line as an if
+  statement's closing brace. This is to more easily distinguish the seperate
+  blocks. 
+  
+- Control statements should never omit braces and do single statements. This is
+  mostly personal preference, but I do think it makes things more clear.
+
+*** Naming:
+**** Rule 0: NEVER USE i AND j!
+Never use the variable names i and j. These are easy to confuse, and often make
+nested loops awful to read. Name these more descriptively.
+For example:
+- If you are using a variable to index an array, name the variable index.
+- If you are indexing multiple arrays, name it "array name + Index".
+- If you are using it to count something, call it count, or "name of the
+  thing you are counting + count".
+  
+*** Comments:

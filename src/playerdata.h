@@ -9,10 +9,10 @@
 #include "linkedlist.h"
 
 // Let the compiler know there will be structs defined elsewhere:
-typedef struct playerPath playerPath;
 typedef struct playerArea playerArea;
-typedef struct list list;
+typedef struct playerPath playerPath;
 typedef struct listNode listNode;
+typedef struct list list;
 
 typedef struct statBlock
 {
