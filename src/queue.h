@@ -37,7 +37,7 @@ typedef struct queueNode
 
 typedef struct queue
 {
-	bool lock;
+	volatile bool lock;
 	size_t itemCount;
 	queueNode * front;
 	queueNode * back;

@@ -157,6 +157,9 @@ void popQueue(queue * queue)
 // Adds data to the back of a queue:
 void pushQueue(queue * queue, void * data, queueDataType type)
 {
+	// Check if the queue is locked:
+	while (queue->lock);
+
 	// Create a new node:
 	queueNode * newNode = malloc(sizeof(queueNode));
 	newNode->type = type;
