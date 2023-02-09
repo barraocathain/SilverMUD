@@ -6,6 +6,17 @@ to improvise that they have at the table, through simple programming and
 easy-to-understand structures.
 
 * Player's Guide
+** Running The Client
+*** How To Connect To A Server:
+To connect to a server, use the command-line option =-i=, and the IP address of
+the server. If the server admin is hosting the server on a port other than the
+default port of 5000, you can use the =-p= option with the number of the port. If
+the connection is successful, you will be placed in the server's login
+area. Type =/join <player name>=, where player name is a name of your choosing,
+and you will be placed in the spawn area, ready to play.
+
+*** Other Launch Options:
+
 ** The Basic Commands
 SilverMUD is played through a set of very simple commands. To use a command,
 type a forward-slash (/) followed immediately by the command name. The command
@@ -61,5 +72,14 @@ For example:
 - If you are indexing multiple arrays, name it "array name + Index".
 - If you are using it to count something, call it count, or "name of the
   thing you are counting + count".
-  
+
+**** Rule 1: No one letter variable names, unless in a mathematical function.
+You should never use one letter variable names. They're needlessly obtuse and
+you will not remember their meaning upon re-reading of the source code. The
+exception to this is when you are writing a function which replicates a
+mathematical formula or function with commonly accepted notation. However, you
+should consider if it would be better to break mathematical convention for
+clarity inside the program, such as when the variable names are the first letter
+of a word or the mathematical notation uses many similar looking variables.
+
 *** Comments:
