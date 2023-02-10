@@ -82,4 +82,10 @@ should consider if it would be better to break mathematical convention for
 clarity inside the program, such as when the variable names are the first letter
 of a word or the mathematical notation uses many similar looking variables.
 
+**** Rule 2: Prefer to use full words in variable and function names:
+You should always prefer to use full words in variable and function names. It
+makes the source code much easier to read, like a sentence. Ideally, if you want
+to shorten the name, use synonyms or rephrasing before you resort to removing
+letters.
+
 *** Comments:
