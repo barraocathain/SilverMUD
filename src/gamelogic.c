@@ -297,48 +297,10 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 	{
 		userMessage * tryMessage = malloc(sizeof(userMessage));
 		tryMessage->senderName[0] = '\0';
-		switch (getCoreStatFromString(currentCommand->arguments, 9))
-		{
-			case STRENGTH:
-			{
-				switch (statCheck(currentCommand->caller, 20, STRENGTH))
-				{
-					case CRITICAL_FAILURE:
-					{
-						strcpy(tryMessage->messageContent, "You weak, puny shit. Bet you don't even lift, bro.\n");
-						break;
-					}
-					case FAILURE:
-					{
-						strcpy(tryMessage->messageContent, "Come on, bro, you should be able to get this set done.\n");
-						break;
-					}
-					case SUCCESS:
-					{
-						strcpy(tryMessage->messageContent, "Nice set, bro. Keep it up.\n");
-						break;
-					}
-					case CRITICAL_SUCCESS:
-					{
-						strcpy(tryMessage->messageContent, "HOLY SHIT, BRO! THAT'S SOME MAD REPS RIGHT THERE!\n");
-						break;
-					}
-					default:
-					{
-						strcpy(tryMessage->messageContent, "I don't even, bro.\n");
-					}
-				}
-				break;
-			}
-			default:
-			{
-				sprintf(tryMessage->messageContent,"%d",
-						skillCheck(currentCommand->caller, 10, currentCommand->arguments, strlen(currentCommand->arguments),
-								   parameters->globalSkillList));
-				break;
-			}
-		}
 
+		// Temporary message until we can implement objects, events, and challenges.
+		strcpy(tryMessage->messageContent, "The try command is currently not implemented. Implement it if you want to use it.\n");
+		
 		// Allocate an outputMessage for the queue:
 		outputMessage * tryOutputMessage = createTargetedOutputMessage(tryMessage, &currentCommand->caller, 1);
 
