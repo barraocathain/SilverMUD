@@ -12,6 +12,7 @@
 // -=[ Data Structures ]=-:
 // ========================
 
+// An event for storing the information
 typedef struct commandEvent commandEvent;
 typedef struct commandEvent
 {
@@ -83,6 +84,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue);
 // -=[ Gameplay Primitives ]=-:
 // ============================
 
+// The possible outcomes of a check or challenge:
 typedef enum outcome
 {
 	CRITICAL_FAILURE,
