@@ -22,16 +22,6 @@ typedef struct commandEvent
 	char * arguments;
 } commandEvent;
 
-// A first-in first-out queue for message input from players:
-typedef struct commandQueue
-{
-	bool lock;
-	bool paused;
-	int currentLength;
-	commandEvent * back;
-	commandEvent * front;
-} commandQueue;
-
 // A data-structure containing the needed parameters for a main game loop:
 typedef struct gameLogicParameters
 {
@@ -58,27 +48,15 @@ int movePlayerToArea(playerInfo * player, char * requestedPath);
 // Thread function which runs the main game loop, given the needed parameters:
 void * gameLogicHandler(void * parameters);
 
-// Create a commandQueue:
-commandQueue * createCommandQueue(void);
-
 // Enqueue a command to a commandQueue:
-int queueCommand(commandQueue * queue, char * command, char * arguments,
+void queueCommand(queue * queue, char * command, char * arguments,
 				 int commandLength, int argumentsLength , playerInfo * callingPlayer);
 
 // Enqueue a messaged command to a commandQueue:
-int queueMessagedCommand(commandQueue * queue, inputMessage * messageToQueue);
-
-// Dequeue the front commandEvent from a commandQueue:
-int dequeueCommand(commandQueue * queue);
-
-// Return the front commandEvent from a commandQueue:
-commandEvent * peekCommand(commandQueue * queue); 
+void queueMessagedCommand(queue * queue, inputMessage * messageToQueue);
 
 // Evaluate the next commandEvent:
-int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue);
-
-/* // Evaluate the given commandEvent: */
-/* int evaluateCommand(gameLogicParameters * parameters, commandEvent * command); */
+int evaluateNextCommand(gameLogicParameters * parameters, queue * queue);
 
 // ============================
 // -=[ Gameplay Primitives ]=-:

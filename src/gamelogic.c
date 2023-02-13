@@ -21,11 +21,11 @@ void * gameLogicHandler(void * parameters)
 {
 	gameLogicParameters * threadParameters = parameters;
 	inputMessage * currentInput = NULL;
-	commandQueue * commandQueue = createCommandQueue();
+	queue * commandQueue = createQueue();
 	while(true)
 	{
 		// Evaluate remaining commands:
-		while(commandQueue->currentLength != 0)
+		while(commandQueue->itemCount != 0)
 		{
 			evaluateNextCommand(threadParameters, commandQueue);
 		}
@@ -93,30 +93,8 @@ void * gameLogicHandler(void * parameters)
 	pthread_exit(NULL);
 }
 
-// Create a commandQueue:
-commandQueue * createCommandQueue(void)
-{
-	commandQueue * newCommandQueue = calloc(1, sizeof(commandQueue));
-	newCommandQueue->back = NULL;
-	newCommandQueue->front = NULL;
-	newCommandQueue->lock = false;
-	newCommandQueue->paused = false;
-	newCommandQueue->currentLength = 0;
-	return newCommandQueue;
-}
-
-// Return the front commandEvent from a commandQueue:
-commandEvent * peekCommand(commandQueue * queue)
-{
-	// Do nothing until the command queue is unlocked.
-	while(queue->lock);
-
-	// Return the front item.
-	return queue->front;
-}
-
 // Enqueue a messaged command to a commandQueue:
-int queueMessagedCommand(commandQueue * queue, inputMessage * messageToQueue)
+void queueMessagedCommand(queue * queue, inputMessage * messageToQueue)
 {
 	// Prepare the new commandEvent:
 	commandEvent * newCommand = calloc(1, sizeof(commandEvent));
@@ -145,48 +123,11 @@ int queueMessagedCommand(commandQueue * queue, inputMessage * messageToQueue)
 		*character = tolower(*character);
 	}
 	
-	// Wait for the queue to unlock:
-	while (queue->lock);
-
-	// Check that we're not overflowing the queue:
-	if ((queue->currentLength + 1) > MAXQUEUELENGTH)
-	{
-		// Free the new command, it's getting dumped:
-		free(newCommand);
-		// Unlock the queue:
-		queue->lock = false;
-		return -1;
-	}
-	else
-	{
-		// If the queue is empty, set the first commandEvent as both the front and back of the queue:
-		if(queue->front == NULL)
-		{
-			queue->front = newCommand;
-			queue->back = newCommand;
-			queue->currentLength++;
-			
-			// Unlock the queue:
-			queue->lock = false;
-
-			return 0;
-		}
-		else
-		{
-			queue->back->next = newCommand;
-			queue->back = newCommand;
-			queue->currentLength++;
-
-            // Unlock the queue:
-			queue->lock = false;
-
-			return 0;
-		}
-	}
+	pushQueue(queue, newCommand, COMMAND);
 }
 
 // Enqueue a command to a commandQueue:
-int queueCommand(commandQueue * queue, char * command, char * arguments, int commandLength, int argumentsLength, playerInfo * callingPlayer)
+void queueCommand(queue * queue, char * command, char * arguments, int commandLength, int argumentsLength, playerInfo * callingPlayer)
 {
 	// Prepare the new commandEvent:
 	commandEvent * newCommand = calloc(1, sizeof(commandEvent));
@@ -196,96 +137,20 @@ int queueCommand(commandQueue * queue, char * command, char * arguments, int com
 
 	// Copy the command and arguments:
 	strncpy(newCommand->command, command, commandLength);
-	strncpy(newCommand->arguments, arguments, argumentsLength);
-
+	if(argumentsLength > 0)
+	{
+		strncpy(newCommand->arguments, arguments, argumentsLength);
+	}
 	// Ensure the arguments are safe to parse, without adding newlines:
 	userNameSanatize(newCommand->command, 16);
 
-	// Wait for the queue to unlock:
-	while (queue->lock);
-
-	// Check that we're not overflowing the queue:
-	if ((queue->currentLength + 1) > MAXQUEUELENGTH)
-	{
-		// Unlock the queue:
-		queue->lock = false;
-		return -1;
-	}
-	else
-	{
-		// If the queue is empty, set the first commandEvent as both the front and back of the queue:
-		if(queue->front == NULL)
-		{
-			queue->front = newCommand;
-			queue->back = newCommand;
-			queue->currentLength++;
-
-			// Unlock the queue:
-			queue->lock = false;
-
-			return 0;
-		}
-		else
-		{
-			queue->back->next = newCommand;
-			queue->back = newCommand;
-			queue->currentLength++;
-
-			// Unlock the queue:
-			queue->lock = false;
-
-			return 0;
-		}
-	}
-}
-
-// Dequeue the front commandEvent from a commandQueue:
-int dequeueCommand(commandQueue * queue)
-{
-	// Wait for the queue to unlock:
-	while (queue->lock);
-
-	// Lock the queue:
-	queue->lock = true;
-
-	// Check the list isn't empty:
-	if(queue->front == NULL)
-	{
-		queue->lock = false;
-		return -1;
-	}
-
-    // If there is only one item in the queue:
-	else if(queue->front == queue->back)
-	{
-		free(queue->front->command);
-		free(queue->front->arguments);
-		free(queue->front);
-		queue->front = NULL;
-		queue->back = NULL;
-		queue->currentLength--;
-		queue->lock = false;
-		return 0;
-	}
-
-	// Remove the front item:
-	else
-	{
-		commandEvent * commandToDelete = queue->front;
-		queue->front = queue->front->next;
-		free(commandToDelete->command);
-		free(commandToDelete->arguments);
-		free(commandToDelete);
-		queue->currentLength--;
-		queue->lock = false;
-		return 0;
-	}
+	pushQueue(queue, newCommand, COMMAND);
 }
 
 // Evaluate the next commandEvent:
-int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
+int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 {
-	commandEvent * currentCommand = peekCommand(queue);
+	commandEvent * currentCommand = peekQueue(queue)->data.command;
 	while(queue->lock);
 	queue->lock = true;	
 	if(currentCommand == NULL)
@@ -686,7 +551,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, commandQueue * queue)
 	// Remove the current command and unlock the queue:
 	currentCommand = NULL;
 	queue->lock = false;	
-	dequeueCommand(queue);
+	popQueue(queue);
 	return 0;
 }
 
