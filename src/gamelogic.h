@@ -12,7 +12,7 @@
 // -=[ Data Structures ]=-:
 // ========================
 
-// An event for storing the information
+// An event for storing the information needed to evaluate a command:
 typedef struct commandEvent commandEvent;
 typedef struct commandEvent
 {
@@ -22,7 +22,7 @@ typedef struct commandEvent
 	char * arguments;
 } commandEvent;
 
-// A data-structure containing the needed parameters for a main game loop:
+// A data-structure containing the needed parameters for the main game loop:
 typedef struct gameLogicParameters
 {
 	// Players:
@@ -42,21 +42,18 @@ typedef struct gameLogicParameters
 // -=[    Functions    ]=-:
 // ========================
 
-// Player movement:
-int movePlayerToArea(playerInfo * player, char * requestedPath);
-
 // Thread function which runs the main game loop, given the needed parameters:
 void * gameLogicHandler(void * parameters);
 
-// Enqueue a command to a commandQueue:
-void queueCommand(queue * queue, char * command, char * arguments,
-				 int commandLength, int argumentsLength , playerInfo * callingPlayer);
-
-// Enqueue a messaged command to a commandQueue:
+// Enqueue a command that has been sent as a message from a user to a queue:
 void queueMessagedCommand(queue * queue, inputMessage * messageToQueue);
 
-// Evaluate the next commandEvent:
+// Evaluate the next commandEvent in a queue:
 int evaluateNextCommand(gameLogicParameters * parameters, queue * queue);
+
+// Enqueue a command to a queue:
+void queueCommand(queue * queue, char * command, char * arguments, int commandLength, int argumentsLength,
+				  playerInfo * callingPlayer);
 
 // ============================
 // -=[ Gameplay Primitives ]=-:
@@ -72,13 +69,13 @@ typedef enum outcome
 	ERROR
 } outcome;
 
-// Player movement:
+// Move a player along a path in their current area:
 int movePlayerToArea(playerInfo * player, char * requestedPath);
 
-// Run a stat check:
+// Run a stat check for the given player, returning an outcome:
 outcome statCheck(playerInfo * player, int chance, coreStat statToCheck);
 
-// Run a skill check:
+// Run a skill check for the given player, returning an outcome:
 outcome skillCheck(playerInfo * player, int chance, char * skillName, size_t skillNameLength, list * globalSkillList);
 
 #endif

@@ -22,29 +22,29 @@ void * gameLogicHandler(void * parameters)
 	gameLogicParameters * threadParameters = parameters;
 	inputMessage * currentInput = NULL;
 	queue * commandQueue = createQueue();
-	while(true)
+	while (true)
 	{
 		// Evaluate remaining commands:
-		while(commandQueue->itemCount != 0)
+		while (commandQueue->itemCount != 0)
 		{
 			evaluateNextCommand(threadParameters, commandQueue);
 		}
 
 		// Wait if there is nothing to do:
-		if(threadParameters->inputQueue->itemCount == 0)
+		if (threadParameters->inputQueue->itemCount == 0)
 		{
 			pthread_cond_wait(&threadParameters->inputQueue->condition, &threadParameters->inputQueue->mutex);
 		}
 		
 		// Check for new messages and pop them off the queue:
-		if(threadParameters->inputQueue->itemCount != 0)
+		if (threadParameters->inputQueue->itemCount != 0)
 		{
-			while(threadParameters->inputQueue->lock == true);
+			while (threadParameters->inputQueue->lock == true);
 			threadParameters->inputQueue->lock = true;
 			currentInput = peekQueue(threadParameters->inputQueue)->data.inputMessage;
 			userInputSanatize(currentInput->content->messageContent, MAX);
 			// A slash as the first character means the message is a user command:
-			if(currentInput->content->messageContent[0] == '/')
+			if (currentInput->content->messageContent[0] == '/')
 			{
 				queueMessagedCommand(commandQueue, currentInput);
 			}
@@ -93,7 +93,7 @@ void * gameLogicHandler(void * parameters)
 	pthread_exit(NULL);
 }
 
-// Enqueue a messaged command to a commandQueue:
+// Evaluate the next commandEvent in a queue:
 void queueMessagedCommand(queue * queue, inputMessage * messageToQueue)
 {
 	// Prepare the new commandEvent:
@@ -126,8 +126,9 @@ void queueMessagedCommand(queue * queue, inputMessage * messageToQueue)
 	pushQueue(queue, newCommand, COMMAND);
 }
 
-// Enqueue a command to a commandQueue:
-void queueCommand(queue * queue, char * command, char * arguments, int commandLength, int argumentsLength, playerInfo * callingPlayer)
+// Enqueue a command to a queue:
+void queueCommand(queue * queue, char * command, char * arguments, int commandLength, int argumentsLength,
+				  playerInfo * callingPlayer)
 {
 	// Prepare the new commandEvent:
 	commandEvent * newCommand = calloc(1, sizeof(commandEvent));
@@ -137,7 +138,7 @@ void queueCommand(queue * queue, char * command, char * arguments, int commandLe
 
 	// Copy the command and arguments:
 	strncpy(newCommand->command, command, commandLength);
-	if(argumentsLength > 0)
+	if (argumentsLength > 0)
 	{
 		strncpy(newCommand->arguments, arguments, argumentsLength);
 	}
@@ -147,18 +148,18 @@ void queueCommand(queue * queue, char * command, char * arguments, int commandLe
 	pushQueue(queue, newCommand, COMMAND);
 }
 
-// Evaluate the next commandEvent:
+// Evaluate the next commandEvent in a queue:
 int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 {
 	commandEvent * currentCommand = peekQueue(queue)->data.command;
-	while(queue->lock);
+	while (queue->lock);
 	queue->lock = true;	
-	if(currentCommand == NULL)
+	if (currentCommand == NULL)
 	{
 		return -1;
 	}
 	// Try command: Attempt to use a stat or skill on an object:
-	if(strncmp(currentCommand->command, "try", 3) == 0)
+	if (strncmp(currentCommand->command, "try", 3) == 0)
 	{
 		userMessage * tryMessage = malloc(sizeof(userMessage));
 		tryMessage->senderName[0] = '\0';
@@ -176,7 +177,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 		free(tryMessage);
 	}
 	// Exit command: Sends an "empty" exit message to disconnect a client:
-	if(strncmp(currentCommand->command, "exit", 4) == 0)
+	if (strncmp(currentCommand->command, "exit", 4) == 0)
 	{
 		// Allocate a userMessage containing null characters as the first char in both fields:
 		userMessage * exitMessage = malloc(sizeof(userMessage));
@@ -194,15 +195,15 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 	}
 
 	// Move command: Moves the caller to a different area given a path name or number:
-	if(strncmp(currentCommand->command, "move", 4) == 0)
+	if (strncmp(currentCommand->command, "move", 4) == 0)
 	{
 		char requestedPath[32];
-		if(strlen(currentCommand->arguments) > 0 && currentCommand->caller->currentArea != getFromList(parameters->areaList, 0)->area)
+		if (strlen(currentCommand->arguments) > 0 && currentCommand->caller->currentArea != getFromList(parameters->areaList, 0)->area)
 		{
 			memcpy(requestedPath, currentCommand->arguments, 32);
 			userNameSanatize(requestedPath, 32);
 			requestedPath[31] = '\0';
-			if(movePlayerToArea(currentCommand->caller, requestedPath) == 0)
+			if (movePlayerToArea(currentCommand->caller, requestedPath) == 0)
 			{
 				// Call the look command after moving. It's fine to unlock, because the loop won't
 				// continue until the command is queued:
@@ -214,7 +215,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 	}
 
 	// Look command: Returns the description of the current area and paths:
-	if(strncmp(currentCommand->command, "look", 4) == 0)
+	if (strncmp(currentCommand->command, "look", 4) == 0)
 	{
 		char formattedString[64];
 		userMessage * lookMessage = calloc(1, sizeof(userMessage));
@@ -236,11 +237,11 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 		int charCount = 13;
 		strncat(lookMessage->messageContent, "You can go:", 13);
 		
-		if(currentCommand->caller->currentArea->pathList->itemCount > 0)
+		if (currentCommand->caller->currentArea->pathList->itemCount > 0)
 		{
 			for(size_t index = 0; index < currentCommand->caller->currentArea->pathList->itemCount; index++)
 			{
-				if((charCount + 64) >= MAX)
+				if ((charCount + 64) >= MAX)
 				{
 					lookOutputMessage = createTargetedOutputMessage(lookMessage, &currentCommand->caller, 1);
 
@@ -265,23 +266,23 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 	}
 	// Join command: Allows the player to join the game given a name:
 	// TODO: Implement login/character creation. Will be a while:
-	if(strncmp(currentCommand->command, "join", 4) == 0)
+	if (strncmp(currentCommand->command, "join", 4) == 0)
 	{
-		if(currentCommand->caller->currentArea == getFromList(parameters->areaList, 0)->area)
+		if (currentCommand->caller->currentArea == getFromList(parameters->areaList, 0)->area)
 		{
 			bool validName = true;
 			for(int index = 0; index < *parameters->playerCount; index++)
 			{
-				if(currentCommand->arguments[0] == '\0')
+				if (currentCommand->arguments[0] == '\0')
 				{
 					validName = false;
 				}
-				if(strncmp(currentCommand->arguments, parameters->connectedPlayers[index].playerName, 16) == 0)
+				if (strncmp(currentCommand->arguments, parameters->connectedPlayers[index].playerName, 16) == 0)
 				{
 					validName = false;
 				}
 			}
-			if(validName)
+			if (validName)
 			{
 				strncpy(currentCommand->caller->playerName, currentCommand->arguments, 16);
 				currentCommand->caller->currentArea = getFromList(parameters->areaList, 1)->area;
@@ -294,12 +295,12 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 		}
 	}
 	// Talk command: Allows the player to begin a chat session with another player:
-	if(strncmp(currentCommand->command, "talk", 4) == 0)
+	if (strncmp(currentCommand->command, "talk", 4) == 0)
 	{
 		// TODO: Implement.
 	}
 	// Stat command: Displays the current character's sheet.
-	if(strncmp(currentCommand->command, "stat", 4) == 0)
+	if (strncmp(currentCommand->command, "stat", 4) == 0)
 	{
 		char * formattedString = calloc(121, sizeof(char));
 		userMessage * statMessage = calloc(1, sizeof(userMessage));
@@ -319,7 +320,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 		strncat(statMessage->messageContent, formattedString, 120);
 
 		// Levelling stats: Current XP, and spec points.
-		if(currentCommand->caller->stats->specPoints > 0 || currentCommand->caller->stats->skillPoints > 0)
+		if (currentCommand->caller->stats->specPoints > 0 || currentCommand->caller->stats->skillPoints > 0)
 		{
 			snprintf(formattedString, 120, "Current Experience: %ld | Spec Points Available: %d | Skill Points Available: %d",
 					 currentCommand->caller->stats->experience, currentCommand->caller->stats->specPoints, currentCommand->caller->stats->skillPoints);
@@ -337,20 +338,20 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 		pushQueue(parameters->outputQueue, statOutputMessage, OUTPUT_MESSAGE);
 		
 		bzero(statMessage->messageContent, sizeof(char) * MAX);
-		if(currentCommand->caller->skills->head != NULL)
+		if (currentCommand->caller->skills->head != NULL)
 		{			
 			size_t skillIndex = 0;
 			int charCount = 0;
 			bool addNewline = false;
 			playerSkill * skill;
-			while(skillIndex < currentCommand->caller->skills->itemCount)
+			while (skillIndex < currentCommand->caller->skills->itemCount)
 			{
 				skill = getFromList(currentCommand->caller->skills, skillIndex)->skill;
 				skillIndex++;
 				snprintf(formattedString, 120, "| %2d | %31s ", skill->skillPoints, skill->skillName);
 				charCount += 43;
 				strncat(statMessage->messageContent, formattedString, 120);
-				if((charCount + 43) >= MAX)
+				if ((charCount + 43) >= MAX)
 				{
 					// Allocate an outputMessage for the queue:
 					statOutputMessage = createTargetedOutputMessage(statMessage, &currentCommand->caller, 1);
@@ -361,7 +362,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 					charCount = 0;
 					break;
 				}
-				else if(addNewline)
+				else if (addNewline)
 				{
 					strncat(statMessage->messageContent, "|\n", 3);
 					charCount++;
@@ -383,18 +384,18 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 	}
 	
 	// Spec command: Assign spec points to stats:
-	if(strncmp(currentCommand->command, "spec", 4) == 0)
+	if (strncmp(currentCommand->command, "spec", 4) == 0)
 	{
 		userMessage * specMessage = calloc(1, sizeof(userMessage));
 		specMessage->senderName[0] = '\0';
 		char * formattedString = calloc(121, sizeof(char));
-		if(currentCommand->caller->stats->specPoints > 0)
+		if (currentCommand->caller->stats->specPoints > 0)
 		{
 			int selectedAmount = 0;
 			strtok(currentCommand->arguments, " ");
 			selectedAmount = atoi(&currentCommand->arguments[strlen(currentCommand->arguments) + 1]);
 			coreStat selectedStat = getCoreStatFromString(currentCommand->arguments, 16);
-			if(selectedAmount > 0 && (currentCommand->caller->stats->specPoints - selectedAmount) >= 0)
+			if (selectedAmount > 0 && (currentCommand->caller->stats->specPoints - selectedAmount) >= 0)
 			{
 				switch (selectedStat)
 				{
@@ -464,11 +465,11 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 		free(specMessage);
 		free(formattedString);
 	}
-	if(strncmp(currentCommand->command, "skill", 5) == 0)
+	if (strncmp(currentCommand->command, "skill", 5) == 0)
 	{
 		userMessage * skillMessage = calloc(1, sizeof(userMessage));
 		skillMessage->senderName[0] = '\0';
-		if((currentCommand->caller->stats->skillPoints - 1) >= 0)
+		if ((currentCommand->caller->stats->skillPoints - 1) >= 0)
 		{
 			int returnValue = takeSkill(parameters->globalSkillList, currentCommand->arguments,
 					  strlen(currentCommand->arguments), currentCommand->caller);
@@ -502,7 +503,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 		
 		free(skillMessage);
 	}
-	if(strncmp(currentCommand->command, "listskills", 10) == 0)
+	if (strncmp(currentCommand->command, "listskills", 10) == 0)
 	{
 		userMessage * listMessage = calloc(1, sizeof(userMessage));
 		char * formattedString = calloc(121, sizeof(char));
@@ -510,13 +511,13 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 		size_t skillIndex = 0;
 		bool addNewline = false;
 		playerSkill * currentSkill;
-		while(skillIndex < parameters->globalSkillList->itemCount)
+		while (skillIndex < parameters->globalSkillList->itemCount)
 		{
 			currentSkill = getFromList(parameters->globalSkillList, skillIndex)->skill;
 			snprintf(formattedString, 120, "| %-31s ", currentSkill->skillName);
 			charCount += 43;
 			strncat(listMessage->messageContent, formattedString, 120);
-			if((charCount + 46) >= MAX)
+			if ((charCount + 46) >= MAX)
 			{
 				// Allocate an outputMessage for the queue:
 				outputMessage * listOutputMessage = createTargetedOutputMessage(listMessage, &currentCommand->caller, 1);
@@ -528,7 +529,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 				charCount = 0;
 				addNewline = false;
 			}
-			else if(addNewline)
+			else if (addNewline)
 			{
 				strncat(listMessage->messageContent, "|\n", 3);
 				charCount++;
@@ -555,11 +556,11 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 	return 0;
 }
 
-// Run a stat check:
+// Run a stat check for the given player, returning an outcome:
 outcome statCheck(playerInfo * player, int chance, coreStat statToCheck)
 {
 	// Calculate the chance:
-	if(chance > 100 || chance < 0)
+	if (chance > 100 || chance < 0)
 	{
 		return ERROR;
 	}
@@ -600,9 +601,9 @@ outcome statCheck(playerInfo * player, int chance, coreStat statToCheck)
 		}
 	}
 	int attempt = (random() % 100) + modifier;
-	if(attempt >= chance)
+	if (attempt >= chance)
 	{
-		if(attempt >= 98)
+		if (attempt >= 98)
 		{
 			return CRITICAL_SUCCESS;
 		}
@@ -613,7 +614,7 @@ outcome statCheck(playerInfo * player, int chance, coreStat statToCheck)
 	}
 	else
 	{
-		if(attempt <= 2)
+		if (attempt <= 2)
 		{
 			return CRITICAL_FAILURE;
 		}
@@ -624,11 +625,11 @@ outcome statCheck(playerInfo * player, int chance, coreStat statToCheck)
 	}
 }
 
-// Run a skill check:
+// Run a skill check for the given player, returning an outcome:
 outcome skillCheck(playerInfo * player, int chance, char * skillName, size_t skillNameLength, list * globalSkillList)
 {
 	// Calculate the chance:
-	if(chance > 100 || chance < 0)
+	if (chance > 100 || chance < 0)
 	{
 		return ERROR;
 	}
@@ -637,9 +638,9 @@ outcome skillCheck(playerInfo * player, int chance, char * skillName, size_t ski
 	// Check if the player has the given skill:
 	bool playerHasSkill = false;
 	size_t playerIndex = 0;
-	while(playerIndex < player->skills->itemCount)
+	while (playerIndex < player->skills->itemCount)
 	{
-		if(strncmp(skillName, getFromList(player->skills, playerIndex)->skill->skillName, skillNameLength) != 0)
+		if (strncmp(skillName, getFromList(player->skills, playerIndex)->skill->skillName, skillNameLength) != 0)
 		{
 			playerHasSkill = true;
 			break;
@@ -650,9 +651,9 @@ outcome skillCheck(playerInfo * player, int chance, char * skillName, size_t ski
 	// If the player doesn't have the skill, check if it's in the game and is trained:
 	bool trainedSkill = false;
 	size_t globalIndex = 0;
-	while(globalIndex < globalSkillList->itemCount)
+	while (globalIndex < globalSkillList->itemCount)
 	{
-		if(strncmp(skillName, getFromList(globalSkillList, globalIndex)->skill->skillName, skillNameLength) != 0)
+		if (strncmp(skillName, getFromList(globalSkillList, globalIndex)->skill->skillName, skillNameLength) != 0)
 		{
 			trainedSkill = getFromList(globalSkillList, globalIndex)->skill->trainedSkill;
 			break;
@@ -662,20 +663,20 @@ outcome skillCheck(playerInfo * player, int chance, char * skillName, size_t ski
 	
 	// Calculate the modifier:
 	int modifier = 0;
-	if(trainedSkill)
+	if (trainedSkill)
 	{
 		modifier = -100;
 	}
-	else if(playerHasSkill)
+	else if (playerHasSkill)
 	{
 		modifier = getFromList(player->skills, playerIndex)->skill->skillModifier * 4;
 	}
 	
 	// Attempt the check:
 	int attempt = (random() % 100) + modifier;
-	if(attempt >= chance)
+	if (attempt >= chance)
 	{
-		if(attempt >= 98)
+		if (attempt >= 98)
 		{
 			return CRITICAL_SUCCESS;
 		}
@@ -686,7 +687,7 @@ outcome skillCheck(playerInfo * player, int chance, char * skillName, size_t ski
 	}
 	else
 	{
-		if(attempt <= 2)
+		if (attempt <= 2)
 		{
 			return CRITICAL_FAILURE;
 		}
@@ -697,14 +698,14 @@ outcome skillCheck(playerInfo * player, int chance, char * skillName, size_t ski
 	}
 }
 
-// Move a player to a different area given a path in the area:
+// Move a player along a path in their current area:
 int movePlayerToArea(playerInfo * player, char * requestedPath)
 {
 	// Check if a number was given first:
 	size_t selected = atoi(requestedPath);
-	if(selected != 0 && !(selected > player->currentArea->pathList->itemCount))
+	if (selected != 0 && !(selected > player->currentArea->pathList->itemCount))
 	{
-		if(getFromList(player->currentArea->pathList, selected - 1)->path != NULL &&
+		if (getFromList(player->currentArea->pathList, selected - 1)->path != NULL &&
 		   getFromList(player->currentArea->pathList, selected - 1)->path->areaToJoin != NULL)
 		{
 			player->currentArea = getFromList(player->currentArea->pathList, selected - 1)->path->areaToJoin;
@@ -719,7 +720,7 @@ int movePlayerToArea(playerInfo * player, char * requestedPath)
 	// Otherwise search for the description:
 	for (size_t index = 0; index < player->currentArea->pathList->itemCount; index++)
 	{
-		if(strncmp(getFromList(player->currentArea->pathList, index)->path->pathName,
+		if (strncmp(getFromList(player->currentArea->pathList, index)->path->pathName,
 				   requestedPath, 32) == 0)
 		{
 			printf("%s: %s\n", player->playerName, getFromList(player->currentArea->pathList, index)->path->pathName);
