@@ -1,4 +1,4 @@
-// Silverkin Industries Comm-Link Server, Engineering Sample Alpha 0.4.
+// Silverkin Industries Comm-Link Server, Engineering Sample Alpha 0.5
 // PROJECT CODENAME: WHAT DO I PAY YOU FOR? | Level-3 Clearance.
 // Barry Kane, 2021
 #include <time.h>
@@ -122,7 +122,7 @@ int main(int argc, char ** argv)
 	
 	// Give an intro: Display the Silverkin Industries logo and splash text.
 	slowPrint(logostring, delay);
-	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.4\n", delay);
+	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.5\n", delay);
 
 	// Seed random number generator from the current time:
 	srandom((unsigned)time(&currentTime));

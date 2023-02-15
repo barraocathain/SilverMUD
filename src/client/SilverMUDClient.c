@@ -1,4 +1,4 @@
-// Silverkin Industries Comm-Link Client, Public Demonstration Sample Alpha 0.4.
+// Silverkin Industries Comm-Link Client, Public Demonstration Sample Alpha 0.5.
 // PROJECT CODENAME: WHAT DO I PAY YOU FOR? | Level-3 Clearance.
 // Barry Kane, 2021
 #include <netdb.h>
@@ -181,7 +181,7 @@ int main(int argc, char ** argv)
 	bool chatLogging = false, gameLogging = false;
 	
 	// Print welcome message:
-	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK CLIENT ====--\nVersion Alpha 0.4\n", 5000);
+	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK CLIENT ====--\nVersion Alpha 0.5\n", 5000);
 
     // Parse command-line options:
 	while ((currentopt = getopt(argc, argv, "i:c:g:p:d:")) != -1)
