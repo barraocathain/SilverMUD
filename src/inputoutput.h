@@ -4,22 +4,54 @@
 #ifndef INPUTOUTPUT_H
 #define INPUTOUTPUT_H
 #include <ctype.h>
-#include <stdbool.h>
 #include <stdlib.h>
-#include "constants.h"
-#include "playerdata.h"
+#include <stdbool.h>
 #include <gnutls/gnutls.h>
 
-// A message datastructure containing a user/character name and the content:
+#include "queue.h"
+#include "constants.h"
+#include "playerdata.h"
+
+// Let the compiler know there will be structs defined elsewhere:
+typedef struct queue queue;
+
+// ========================
+// -=[ Data Structures ]=-:
+// ========================
+
+// Contains a character/player name and the content of a message:
 typedef struct userMessage
 {	
 	char senderName[32];
 	char messageContent[MAX];
 } userMessage;
 
-// ==================
-// -=[Message I/O]=-:
-// ==================
+// Contains a message sent to the server and a pointer to the playerInfo of the connection which sent it:
+typedef struct inputMessage
+{
+	playerInfo * sender;
+	userMessage * content;
+} inputMessage;
+
+// Contains a message to be sent, the amount of recipients, and pointers to their playerInfo:
+typedef struct outputMessage
+{
+	int recipientsCount;
+	userMessage * content;
+	playerInfo ** recipients;
+} outputMessage;
+
+// Contains pointers to the necessary information to be shared outputThreadHandler function:
+typedef struct outputThreadParameters
+{
+	queue * outputQueue;
+	gnutls_session_t * tlssessions;
+	playerInfo * connectedPlayers;
+} outputThreadParameters;
+
+// ========================
+// -=[    Functions    ]=-:
+// ========================
 
 // Sends a message to a given TLS session, wraps the calls to gnutls_write:
 int messageSend(gnutls_session_t receivingSession, userMessage * messageToSend);
@@ -27,80 +59,16 @@ int messageSend(gnutls_session_t receivingSession, userMessage * messageToSend);
 // Receives a message from a given TLS session, wraps the calls to gnutls_read:
 int messageReceive(gnutls_session_t receiveFromSession, userMessage * receiveToMessage);
 
-// ===================
-// -=[Output Queue]=-:
-// ===================
-typedef struct outputMessage outputMessage;
-typedef struct outputMessage
-{
-	outputMessage * next;
-	playerInfo * targets[PLAYERCOUNT];
-	userMessage * content;
-} outputMessage;
+// Create a targetedOutput message to be delivered to the players pointed to in recipients:
+outputMessage * createTargetedOutputMessage(userMessage * messageToQueue, playerInfo ** recipients, int recipientCount);
 
-// A first-in first-out queue for message output to players:
-typedef struct outputMessageQueue
-{
-	bool lock;
-	int currentLength;
-	outputMessage * back;
-	outputMessage * front;
-} outputMessageQueue;
+// A function for the output thread, which sends queued messages:
+void * outputThreadHandler(void * parameters);
 
-// Creates and initializes a outputMessageQueue:
-outputMessageQueue * createOutputMessageQueue(void);
-
-// Enqueue a userMessage to an outputMessageQueue:
-int queueOutputMessage(outputMessageQueue * queue, userMessage messageToQueue);
-int queueTargetedOutputMessage(outputMessageQueue * queue, userMessage *  messageToQueue,
-							   playerInfo ** targets, int numberOfTargets);
-
-// Dequeue the front outputMessage from an outputMessageQueue:
-int dequeueOutputMessage(outputMessageQueue * queue);
-
-// Return the front outputMessage from an outputMessageQueue:
-outputMessage * peekOutputMessage(outputMessageQueue * queue);
-
-// ==================
-// -=[Input Queue]=-:
-// ==================
-typedef struct inputMessage inputMessage;
-typedef struct inputMessage
-{
-	inputMessage * next;
-	playerInfo * sender;
-	userMessage * content;
-} inputMessage;
-
-// A first-in first-out queue for message input from players:
-typedef struct inputMessageQueue
-{
-	bool lock;
-	int currentLength;
-	inputMessage * back;
-	inputMessage * front;
-} inputMessageQueue;
-
-// Create a inputMessageQueue:
-inputMessageQueue * createInputMessageQueue(void);
-
-// Enqueue a userMessage to an inputMessageQueue:
-int queueInputMessage(inputMessageQueue * queue, userMessage messageToQueue, playerInfo * sendingPlayer);
-
-// Dequeue the front inputMessage from an inputMessageQueue:
-int dequeueInputMessage(inputMessageQueue * queue);
-
-// Return the front inputMessage from an inputMessageQueue:
-inputMessage * peekInputMessage(inputMessageQueue * queue);
-
-// =======================
-// -=[Input Sanitation]=-:
-// =======================
-
-// Sanatize user input to ensure it's okay to send to the server:
+// Sanatize user input to ensure it's okay to process:
 void userInputSanatize(char * inputString, int length);
 
-// Sanatize user names so they display correctly;
+// Sanatize user names so they display correctly:
 void userNameSanatize(char * inputString, int length);
 
 #endif

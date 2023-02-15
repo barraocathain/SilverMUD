@@ -5,20 +5,23 @@
 #include <stdio.h>
 #include <ncurses.h>
 
-// A character by character print, similar to a serial terminal with lower baud rate.
-void slowPrint(char * stringToPrint, int delay);
+// A character by character print, similar to a serial terminal with lower baud rate:
+void slowPrint(const char * stringToPrint, int delay);
 
-// The same, altered to work with ncurses.
-void slowPrintNcurses(char * stringToPrint, int delay, WINDOW * window, bool bolded);
+// The same, altered to work with ncurses:
+void slowPrintNcurses(const char * stringToPrint, int delay, WINDOW * window, bool bolded);
 
-// A character by character "brute-force" print, similar to Hollywood hacking scenes.
-void bruteforcePrint(char * stringToPrint, int delay);
+// A character by character "brute-force" print, similar to Hollywood hacking scenes:
+void bruteforcePrint(const char * stringToPrint, int delay);
 
-// The same, altered to work with ncurses.
-void bruteforcePrintNcurses(char * stringToPrint, int delay, WINDOW * window, bool bolded);
+// The same, altered to work with ncurses:
+void bruteforcePrintNcurses(const char * stringToPrint, int delay, WINDOW * window, bool bolded);
+
+// Word-wrap a string to a given width:
+void wrapString(char * stringToWrap, int stringLength, int screenWidth);
 
 // A string containing an ASCII art version of the Silverkin Industries logo.
-char * logostring =
+const char * logostring =
 	"                                                         ///////\n"
     "                                 //////////////////////////////////////////\n"
     "                   ///////////////////////////////////////////////////////////\n"
@@ -32,5 +35,4 @@ char * logostring =
     "         #  #  # #  #    #  #   #    ##  #  ###  # #       ##               //\n"
     "         #  #  ###  #####   #####  ###   #  #  # # ####  ###                /\n";
 
-void wrapString(char * stringToWrap, int stringLength, int screenWidth);
 #endif

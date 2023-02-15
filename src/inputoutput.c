@@ -5,7 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <pthread.h>
 #include <gnutls/gnutls.h>
+
+#include "queue.h"
 #include "constants.h"
 #include "playerdata.h"
 #include "inputoutput.h"
@@ -14,11 +17,14 @@
 int messageSend(gnutls_session_t receivingSession, userMessage * messageToSend)
 {
 	int returnValue = 0;
+	// Continuously attempt to send the name field until it succeeds or fatally errors:
 	do
 	{
 		returnValue = gnutls_record_send(receivingSession, messageToSend->senderName,
 										 sizeof(((userMessage*)0)->senderName));
 	}  while (returnValue == GNUTLS_E_AGAIN || returnValue == GNUTLS_E_INTERRUPTED);
+
+    // Continuously attempt to send the message field until it succeeds or fatally errors:
 	do
 	{
 		returnValue = gnutls_record_send(receivingSession, messageToSend->messageContent,
@@ -32,11 +38,14 @@ int messageSend(gnutls_session_t receivingSession, userMessage * messageToSend)
 int messageReceive(gnutls_session_t receiveFromSession, userMessage * receiveToMessage)
 {
 	int returnValue = 0;
+	// Continuously attempt to receive the name field until it succeeds or fatally errors:
 	do
 	{
 		returnValue = gnutls_record_recv(receiveFromSession, receiveToMessage->senderName,
 										sizeof(((userMessage*)0)->senderName));
 	}  while (returnValue == GNUTLS_E_AGAIN || returnValue == GNUTLS_E_INTERRUPTED);
+
+	// Continuously attempt to receive the message field until it succeeds or fatally errors:
 	do
 	{
 		returnValue = gnutls_record_recv(receiveFromSession, receiveToMessage->messageContent,
@@ -46,282 +55,95 @@ int messageReceive(gnutls_session_t receiveFromSession, userMessage * receiveToM
 	return returnValue;
 }
 
-outputMessageQueue * createOutputMessageQueue(void)
+// Allocate and initialize an outputMessage targeted to a variable amount of players:
+outputMessage * createTargetedOutputMessage(userMessage * messageToQueue, playerInfo ** recipients, int recipientsCount)
 {
-	outputMessageQueue * newQueue = malloc(sizeof(outputMessageQueue));
-	newQueue->front = NULL;
-	newQueue->back = NULL;
-	newQueue->currentLength = 0;
-	newQueue->lock = false;
-	return newQueue;
-}
-
-int queueOutputMessage(outputMessageQueue * queue, userMessage messageToQueue)
-{
-	// Copy the message into a new output message:
+	// Allocate a new output message:
 	outputMessage * newOutputMessage = malloc(sizeof(outputMessage));
-
-	// Allocate the internal userMessage to store the message:
-	newOutputMessage->content = malloc(sizeof(userMessage));
-	
-	// Copy the userMessage to the internal userMessage:
-	strncpy(newOutputMessage->content->senderName, messageToQueue.senderName, 32);
-	strncpy(newOutputMessage->content->messageContent, messageToQueue.messageContent, MAX);
-
-	// We have no targets, NULL sends to all players in an area:
-	newOutputMessage->targets[0] = NULL;
-	
-	// Wait for the queue to unlock:
-	while (queue->lock);
-
-	// Lock the queue:
-	queue->lock = true;
-
-	// Check that we're not overflowing the queue:
-	if ((queue->currentLength + 1) > MAXQUEUELENGTH)
-	{
-		// Unlock the queue:
-		queue->lock = false;
-		return -1;
-	}
-	else
-	{
-		// If the queue is empty, set the first message as both the front and back of the queue:
-		if(queue->front == NULL)
-		{
-			queue->front = newOutputMessage;
-			queue->back = newOutputMessage;
-			queue->currentLength++;
-			
-			// Unlock the queue:
-			queue->lock = false;
-			return 0;
-		}
-		else
-		{
-			queue->back->next = newOutputMessage;
-			queue->back = newOutputMessage;
-			queue->currentLength++;
-
-            // Unlock the queue:
-			queue->lock = false;
-			return 0;
-		}
-	}
-}
-
-int queueTargetedOutputMessage(outputMessageQueue * queue,
-							   userMessage *  messageToQueue, playerInfo ** targets, int numberOfTargets)
-{
-	// Copy the message into a new output message:
-	outputMessage * newOutputMessage = malloc(sizeof(outputMessage));
-
-	// Allocate the internal userMessage to store the message:
 	newOutputMessage->content = malloc(sizeof(userMessage));
 
-	// Set the appropriate recipients:
-	for(int index = 0; index < numberOfTargets && index < PLAYERCOUNT; index++)
-	{
-		newOutputMessage->targets[index] = targets[index];
-	}
-	for(int index = numberOfTargets; index < PLAYERCOUNT; index++)
-	{
-		newOutputMessage->targets[index] = NULL;
-	}
+	// Allocate an array of playerInfo for the output message recepients:
+	newOutputMessage->recipients = malloc(sizeof(playerInfo*) * recipientsCount);
+
+	// Copy in the appropriate data:
+	memcpy(newOutputMessage->recipients, recipients, sizeof(playerInfo *) * recipientsCount);
+	memcpy(newOutputMessage->content, messageToQueue, sizeof(userMessage));
+	newOutputMessage->recipientsCount = recipientsCount;
+
+	// Return a pointer to the new outputMessage:
+	return newOutputMessage;
+}
+
+// A function for the output thread, which sends queued messages:
+void * outputThreadHandler(void * parameters)
+{
+	outputThreadParameters * variables = parameters;
+   	queue * outputQueue = variables->outputQueue;
+	gnutls_session_t * tlssessions = variables->tlssessions;
+	playerInfo * connectedPlayers = variables->connectedPlayers;
 	
-	// Copy the userMessage to the internal userMessage:
-	strncpy(newOutputMessage->content->senderName, messageToQueue->senderName, 32);
-	strncpy(newOutputMessage->content->messageContent, messageToQueue->messageContent, MAX);
+	while (true)
+	{
+		// If there's nothing to do, put the thread to sleep:
+		if (outputQueue->itemCount == 0)
+		{
+			pthread_cond_wait(&outputQueue->condition, &outputQueue->mutex);
+		}
 		
-	// Wait for the queue to unlock:
-	while (queue->lock);
-
-	// Lock the queue:
-	queue->lock = true;
-
-	// Check that we're not overflowing the queue:
-	if ((queue->currentLength + 1) > MAXQUEUELENGTH)
-	{
-		// Unlock the queue:
-		queue->lock = false;
-		return -1;
-	}
-	else
-	{
-		// If the queue is empty, set the first message as both the front and back of the queue:
-		if(queue->front == NULL)
+		// Run through the output queue and send all unsent messages:
+		while (outputQueue->itemCount != 0)
 		{
-			queue->front = newOutputMessage;
-			queue->back = newOutputMessage;
-			queue->currentLength++;
+			// Wait until the queue unlocks:
+			while (outputQueue->lock);
 			
+			// Lock the queue:
+			outputQueue->lock = true;
+
+			// Get a message off the queue:
+			outputMessage * message = peekQueue(outputQueue)->data.outputMessage;
+
 			// Unlock the queue:
-			queue->lock = false;
-			return 0;
-		}
-		else
-		{
-			queue->back->next = newOutputMessage;
-			queue->back = newOutputMessage;
-			queue->currentLength++;
-
-            // Unlock the queue:
-			queue->lock = false;
-			return 0;
-		}
-	}
-}
-
-int dequeueOutputMessage(outputMessageQueue * queue)
-{
-	// Wait for the queue to unlock:
-	while (queue->lock);
-
-	// Lock the queue:
-	queue->lock = true;
-
-	// Check the list isn't empty:
-	if(queue->front == NULL)
-	{
-		queue->lock = false;
-		return -1;
-	}
-	
-	// If there is only one item in the queue:
-	else if(queue->front == queue->back)
-	{
-		free(queue->front->content);
-		free(queue->front);
-		queue->front = NULL;
-		queue->back = NULL;
-		queue->currentLength--;
-		queue->lock = false;
-		return 0;
-	}
-
-	// Remove the front item:
-	else
-	{
-		outputMessage * messageToDelete = queue->front;
-		queue->front = queue->front->next;
-		free(messageToDelete->content);
-		free(messageToDelete);
-		queue->currentLength--;
-		queue->lock = false;
-		return 0;
-	}
-}
-
-inputMessageQueue * createInputMessageQueue(void)
-{
-	inputMessageQueue * newQueue = malloc(sizeof(inputMessageQueue));
-	newQueue->front = NULL;
-	newQueue->back = NULL;
-	newQueue->currentLength = 0;
-	newQueue->lock = false;
-	return newQueue;
-}
-
-int dequeueInputMessage(inputMessageQueue * queue)
-{
-	// Wait for the queue to unlock:
-	while (queue->lock);
-
-	// Lock the queue:
-	queue->lock = true;
-
-	// Check the list isn't empty:
-	if(queue->front == NULL)
-	{
-		queue->lock = false;
-		return -1;
-	}
-	
-	// If there is only one item in the queue:
-	else if(queue->front == queue->back)
-	{
-		free(queue->front->content);
-		free(queue->front);
-		queue->front = NULL;
-		queue->back = NULL;
-		queue->currentLength--;
-		queue->lock = false;
-		return 0;
-	}
-
-	// Remove the front item:
-	else
-	{
-		inputMessage * messageToDelete = queue->front;
-		queue->front = queue->front->next;
-		free(messageToDelete->content);
-		free(messageToDelete);
-		queue->currentLength--;
-		queue->lock = false;
-		return 0;
-	}
-}
-
-int queueInputMessage(inputMessageQueue * queue, userMessage messageToQueue, playerInfo * sendingPlayer)
-{
-	// Copy the message into a new input message:
-	inputMessage * inputMessage = malloc(sizeof(inputMessage));
-
-	// Allocate the internal userMessage to store the message:
-	inputMessage->content = malloc(sizeof(userMessage));
-
-	// Copy the userMessage to the internal userMessage:
-	strncpy(inputMessage->content->senderName, messageToQueue.senderName, 32);
-	strncpy(inputMessage->content->messageContent, messageToQueue.messageContent, MAX);
-
-	// We have no targets, NULL sends to all players in an area:
-	inputMessage->sender = sendingPlayer;	
-
-	// Wait for the queue to unlock:
-	while (queue->lock);
-
-	// Lock the queue:
-	queue->lock = true;
-
-	// Check that we're not overflowing the queue:
-	if ((queue->currentLength + 1) > MAXQUEUELENGTH)
-	{
-		// Unlock the queue:
-		queue->lock = false;
-		return -1;
-	}
-	else
-	{
-		// If the queue is empty, set the first message as both the front and back of the queue:
-		if(queue->front == NULL)
-		{
-			queue->front = inputMessage;
-			queue->back = inputMessage;
-			queue->currentLength++;
+			outputQueue->lock = false;
 			
-			// Unlock the queue:
-			queue->lock = false;
+			// If the first target is set to NULL, it's intended for all connected:
+			if (message->recipientsCount == 0)
+			{
+				for (int index = 0; index < PLAYERCOUNT; index++)  
+				{
+					messageSend(tlssessions[index], message->content);
+				}
+			}
 
-			return 0;
+			// Otherwise, send it only to the targeted players:
+			else
+			{
+				int sentCount = 0;
+				for (int index = 0; index < PLAYERCOUNT; index++)
+				{
+					if (sentCount == message->recipientsCount)
+					{
+						break;
+					}
+					if (&connectedPlayers[index] == message->recipients[sentCount])
+					{
+						sentCount++;
+						messageSend(tlssessions[index], message->content);
+					}
+				}
+			}
+
+			// Remove the output message from the queue:
+			popQueue(outputQueue);
 		}
-		else
-		{
-			queue->back->next = inputMessage;
-			queue->back = inputMessage;
-			queue->currentLength++;
-
-			// Unlock the queue:
-			queue->lock = false;
-
-			return 0;
-		}
-	}
+	}		
 }
 
+// Sanatize user input to ensure it's okay to process:
 void userInputSanatize(char * inputString, int length)
 {
-	for(int index = 0; index <= length; index++)
+	for (int index = 0; index <= length; index++)
 	{
+		// If it's not a printable character, it has no business being here:
 		if(!isprint(inputString[index]))
 		{
 			inputString[index] = '\n';
@@ -329,29 +151,23 @@ void userInputSanatize(char * inputString, int length)
 			break;
 		}
 	}
+	
+	// Make sure it's null-terminated:
 	inputString[length - 1] = '\0';
 }
 
+// Sanatize user names so they display correctly:
 void userNameSanatize(char * inputString, int length)
 {
 	for(int index = 0; index <= length; index++)
 	{
+		// If it's not a printable character, it has no business being here:
 		if(!isprint(inputString[index]))
 		{
 			inputString[index] = '\0';
 			break;
 		}
 	}
+	// Make sure it's null-terminated:
 	inputString[length - 1] = '\0';
-}
-
-// Return the front inputMessage from an inputMessageQueue:
-inputMessage * peekInputMessage(inputMessageQueue * queue)
-{
-	return queue->front;
-}
-
-outputMessage * peekOutputMessage(outputMessageQueue * queue)
-{
-	return queue->front;
 }

@@ -5,10 +5,11 @@
 #include <unistd.h>
 #include <ncurses.h>
 
-void slowPrint(char * stringToPrint, int delay)
+// A character by character print, similar to a serial terminal with lower baud rate:
+void slowPrint(const char * stringToPrint, int delay)
 {
 	int characterIndex = 0;
-	while(stringToPrint[characterIndex] != '\0')
+	while (stringToPrint[characterIndex] != '\0')
 	{
 		putchar(stringToPrint[characterIndex]);
 		// Flush the buffer so there's no line buffering.
@@ -18,14 +19,15 @@ void slowPrint(char * stringToPrint, int delay)
 	}
 }
 
-void slowPrintNcurses(char * stringToPrint, int delay, WINDOW * window, bool bolded)
+// The same, altered to work with ncurses:
+void slowPrintNcurses(const char * stringToPrint, int delay, WINDOW * window, bool bolded)
 {
 	int characterIndex = 0;
-	if(bolded)
+	if (bolded)
 	{
 		wattron(window, A_BOLD);
 	}
-	while(stringToPrint[characterIndex] != '\0')
+	while (stringToPrint[characterIndex] != '\0')
 	{
 		waddch(window, stringToPrint[characterIndex]);
 		// Refresh the ncurses screen.
@@ -33,17 +35,18 @@ void slowPrintNcurses(char * stringToPrint, int delay, WINDOW * window, bool bol
 		usleep(delay);
 		characterIndex++;
 	}
-	if(bolded)
+	if (bolded)
 	{
 		wattroff(window, A_BOLD);
 	}
 	wrefresh(window);
 }
 
-void bruteforcePrint(char * stringToPrint, int delay)
+// A character by character "brute-force" print, similar to Hollywood hacking scenes:
+void bruteforcePrint(const char * stringToPrint, int delay)
 {
 	unsigned int characterIndex = 0;
-	while(stringToPrint[characterIndex] != '\0')
+	while (stringToPrint[characterIndex] != '\0')
 	{
 		for(unsigned char currentCharacter = 32; currentCharacter <= stringToPrint[characterIndex]; currentCharacter++)
 		{
@@ -58,14 +61,15 @@ void bruteforcePrint(char * stringToPrint, int delay)
 	}
 }
 
-void bruteforcePrintNcurses(char * stringToPrint, int delay, WINDOW * window, bool bolded)
+// The same, altered to work with ncurses:
+void bruteforcePrintNcurses(const char * stringToPrint, int delay, WINDOW * window, bool bolded)
 {
 	int characterIndex = 0;
-	if(bolded)
+	if (bolded)
 	{
 		wattron(window, A_BOLD);
 	}
-	while(stringToPrint[characterIndex] != '\0')
+	while (stringToPrint[characterIndex] != '\0')
 	{
 		for(char currentCharacter = 32; currentCharacter <= stringToPrint[characterIndex]; currentCharacter++)
 		{
@@ -78,19 +82,20 @@ void bruteforcePrintNcurses(char * stringToPrint, int delay, WINDOW * window, bo
 		waddch(window, stringToPrint[characterIndex]);
 		characterIndex++;
 	}
-	if(bolded)
+	if (bolded)
 	{
 		wattroff(window, A_BOLD);
 	}
 	wrefresh(window);
 }
 
+// Word-wrap a string to a given width:
 void wrapString(char * stringToWrap, int stringLength, int screenWidth)
 {
 	int characterCount = 0;
 	for(int index = 0; index < stringLength; index++)
 	{
-		if(stringToWrap[index] == '\n')
+		if (stringToWrap[index] == '\n')
 		{
 			characterCount = 0;
 		}
@@ -98,13 +103,13 @@ void wrapString(char * stringToWrap, int stringLength, int screenWidth)
 		{
 			characterCount++;
 		}
-		if(characterCount == screenWidth)
+		if (characterCount == screenWidth)
 		{
-			while(!isspace(stringToWrap[index]) && index > 0)
+			while (!isspace(stringToWrap[index]) && index > 0)
 			{
 				index--;
 			}
-			if(index == 0)
+			if (index == 0)
 			{
 				return;
 			}

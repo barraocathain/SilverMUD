@@ -1,24 +1,46 @@
-#include "../src/lists.h"
-#include "../src/playerdata.h"
+#include "../src/linkedlist.h"
 #include <stdio.h>
+
+static inline void printAreaList(list * areaList)
+{
+	listData * currentData;
+	for(int index = 0; index < areaList->itemCount; index++)
+	{
+		currentData = getFromList(areaList, index);
+		printf("%d\t| %s - %s\n", index, currentData->area->areaName, currentData->area->areaDescription);			
+	}
+}
 
 void main()
 {
-	areaNode * areaList = createAreaList(createArea("Test Area A", "This is Test Area A"));
-	areaNode * counter = areaList;
-	addAreaNodeToList(areaList, createArea("Test Area B", "This is Test Area B"));
-	addAreaNodeToList(areaList, createArea("Test Area C", "This is Test Area C"));
-	for(int index = 0; index <= 2; index++)
+	list * areaList = createList(AREA);
+	char areaName[256];
+	char areaDescription[256];
+	
+	printf("\n--==[ Generating a list of ten items. ]==--\n\n");
+	for(int count = 1; count <= 10; count++)
 	{
-		printf("%s\n", counter->data->areaName);
-		counter = counter->next;
+		sprintf(areaName, "Area %d", count);
+		sprintf(areaDescription, "This is Area %d.", count);
+		
+		addToList(areaList, createArea(areaName, areaDescription) , AREA);
 	}
-	deleteAreaNodeFromList(areaList, getAreaFromList(areaList, 1));
-	addAreaNodeToList(areaList, createArea("Test Area D", "This is Test Area D"));
-	counter = areaList;
-	for(int index = 0; index <= 2; index++)
-	{
-		printf("%s\n", counter->data->areaName);
-		counter = counter->next;
-	}
+	printAreaList(areaList);
+
+	printf("\n--==[ Inserting items into specific indexes. ]==--\n\n");
+	insertIntoList(areaList, createArea("Cool, it worked.", "Cool, it worked."), AREA, 0);
+	insertIntoList(areaList, createArea("Cool, it worked.", "Cool, it worked."), AREA, 6);
+	insertIntoList(areaList, createArea("Cool, it worked.", "Cool, it worked."), AREA, 11);
+	printAreaList(areaList);
+
+	printf("\n--==[ Removing certain areas from the list. ]==--\n\n");
+	removeFromList(areaList, AREA, 12);
+	removeFromList(areaList, AREA, 6);
+	removeFromList(areaList, AREA, 0);
+	
+	printAreaList(areaList);
+	
+	destroyList(&areaList);
+	printf("");
 }
+

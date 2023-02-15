@@ -24,6 +24,6 @@ clean:
 	rm -f $(clientobj) $(serverobj) SilverMUDClient SilverMUDServer SilverMUDClientDebug SilverMUDServerDebug
 
 all: clean SilverMUDClient SilverMUDServer
-all: CFLAGS += -Wall -Wextra -Ofast
-debug: CFLAGS += -Wall -Wextra -pg -ggdb -Og
+all: CFLAGS += -Wall -Wextra -Ofast 
+debug: CFLAGS += -Wall -Wextra -pg -ggdb -Og -D debug
 debug: clean SilverMUDClientDebug SilverMUDServerDebug
