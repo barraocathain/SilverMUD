@@ -14,6 +14,7 @@ typedef struct playerPath playerPath;
 typedef struct listNode listNode;
 typedef struct list list;
 
+// The basic information that needs to be stored for a player or creature's stats:
 typedef struct statBlock
 {
 	// Levelling:
@@ -36,6 +37,7 @@ typedef struct statBlock
 	int skillPoints; 
 } statBlock;
 
+// Information about a skill, including skill levels and modifiers for the player:
 typedef struct playerSkill
 {
 	char skillName[32];
@@ -44,6 +46,7 @@ typedef struct playerSkill
 	bool trainedSkill;
 } playerSkill;
 
+// Information about a single player's character:
 typedef struct playerInfo
 {
 	char playerName[32];
@@ -52,6 +55,7 @@ typedef struct playerInfo
 	list * skills; 
 } playerInfo;
 
+// An enum of the main stats of the game:
 typedef enum coreStat
 {
 	WITS,
@@ -72,7 +76,7 @@ int takeSkillbyID(list * globalSkillList, int skillID, playerInfo * targetPlayer
 // Take a string containing a core stat name and return the core stat:
 coreStat getCoreStatFromString(char * string, int stringLength);
 
-// Deallocate a player:
+// Deallocate a player's information including the skill lists and stats:
 int deallocatePlayer(playerInfo * playerToDeallocate);
 
 #endif

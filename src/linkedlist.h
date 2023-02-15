@@ -15,6 +15,7 @@ typedef struct playerSkill playerSkill;
 // -=[ Data Structures ]=-:
 // ========================
 
+// An enum of the possible data types that can be stored in a list:
 typedef enum listDataType
 {
 	PATH,
@@ -23,6 +24,7 @@ typedef enum listDataType
 	SKILL
 } listDataType;
 
+// A union containing a pointers to all data types that can be stored in a list:
 typedef union listData
 {
 	playerPath * path;
@@ -30,7 +32,8 @@ typedef union listData
 	playerInfo * player;
 	playerSkill * skill;
 } listData;
-	
+
+// A doubly linked node for the linked list type:
 typedef struct listNode listNode;
 typedef struct listNode
 {
@@ -39,6 +42,7 @@ typedef struct listNode
 	listNode * previous;
 } listNode;
 
+// A header structure for the list containing the length, head, tail, and type of the list.
 typedef struct list
 {
 	listDataType type;

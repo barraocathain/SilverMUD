@@ -11,7 +11,7 @@
 // Create a new skill and add it to the global skill list:
 listNode * createSkill(list * globalSkillList, char * skillName, int skillNameLength, bool trainedSkill)
 {
-	if(skillNameLength >= 32)
+	if (skillNameLength >= 32)
 	{
 		fprintf(stderr, "Skill name is too long. Please shorten the name and try again.\n");
 		return NULL;
@@ -35,9 +35,9 @@ int takeSkill(list * globalSkillList, char * skillName, int skillNameLength, pla
 	// Check if the skill exists in the game:
 	size_t globalIndex = 0;
 	bool skillExists = false;
-	while(globalIndex < globalSkillList->itemCount)
+	while (globalIndex < globalSkillList->itemCount)
 	{
-		if(strncmp(skillName, getFromList(globalSkillList, globalIndex)->skill->skillName, skillNameLength) == 0)
+		if (strncmp(skillName, getFromList(globalSkillList, globalIndex)->skill->skillName, skillNameLength) == 0)
 		{
 			skillExists = true;
 			break;
@@ -45,7 +45,7 @@ int takeSkill(list * globalSkillList, char * skillName, int skillNameLength, pla
 		globalIndex++;
 	}
 
-	if(!skillExists)
+	if (!skillExists)
 	{
 		fprintf(stderr, "Skill doesn't exist in skill list.\n");
 		return -1;
@@ -54,16 +54,16 @@ int takeSkill(list * globalSkillList, char * skillName, int skillNameLength, pla
 	// Check if the player has the skill:
 	size_t playerIndex = 0;
 	bool playerHasSkill = false;
-	while(playerIndex < targetPlayer->skills->itemCount)
+	while (playerIndex < targetPlayer->skills->itemCount)
 	{
-		if(strncmp(skillName, getFromList(targetPlayer->skills, playerIndex)->skill->skillName, skillNameLength) == 0)
+		if (strncmp(skillName, getFromList(targetPlayer->skills, playerIndex)->skill->skillName, skillNameLength) == 0)
 		{
 			playerHasSkill = true;
 			break;
 		}
 		playerIndex++;
 	}
-	if(playerHasSkill)
+	if (playerHasSkill)
 	{
 		getFromList(targetPlayer->skills, playerIndex)->skill->skillPoints++;
 	}
@@ -85,7 +85,7 @@ int takeSkill(list * globalSkillList, char * skillName, int skillNameLength, pla
 coreStat getCoreStatFromString(char * inputString, int stringLength)
 {
 	// Check we've got a long enough string to fit a stat:
-	if(stringLength < 4)
+	if (stringLength < 4)
 	{
 		return INVALID;
 	}
@@ -99,11 +99,11 @@ coreStat getCoreStatFromString(char * inputString, int stringLength)
 	
 	// If we have a string that's at most just the stat name plus a null character, or
 	// a dirtier string, we can check in a better order and ignore impossibilites:
-	if(stringLength < 9)
+	if (stringLength < 9)
 	{
-		if(stringLength <= 4)
+		if (stringLength <= 4)
 		{
-			if(strncmp(string, "wits", 4) == 0)
+			if (strncmp(string, "wits", 4) == 0)
 			{
 				free(string);
 				return WITS;
@@ -115,19 +115,19 @@ coreStat getCoreStatFromString(char * inputString, int stringLength)
 			}
 		}
 		// Hopefully one of the seven letter long ones:
-		else if(stringLength <= 7)
+		else if (stringLength <= 7)
 		{
-			if(strncmp(string, "strength", 7) == 0)
+			if (strncmp(string, "strength", 7) == 0)
 			{
 				free(string);
 				return STRENGTH;
 			}
-			else if(strncmp(string, "dexerity", 7) == 0)
+			else if (strncmp(string, "dexerity", 7) == 0)
 			{
 				free(string);
 				return DEXERITY;
 			}
-			if(strncmp(string, "wits", 4) == 0)
+			if (strncmp(string, "wits", 4) == 0)
 			{
 				free(string);
 				return WITS;
@@ -141,27 +141,27 @@ coreStat getCoreStatFromString(char * inputString, int stringLength)
 		// Hopefully one of the 8 letter long stats:
 		else
 		{
-			if(strncmp(string, "intellect", 8) == 0)
+			if (strncmp(string, "intellect", 8) == 0)
 			{
 				free(string);
 				return INTELLECT;
 			}
-			else if(strncmp(string, "endurance", 8) == 0)
+			else if (strncmp(string, "endurance", 8) == 0)
 			{
 				free(string);
 				return ENDURANCE;
 			}
-			else if(strncmp(string, "strength", 7) == 0)
+			else if (strncmp(string, "strength", 7) == 0)
 			{
 				free(string);
 				return STRENGTH;
 			}
-			else if(strncmp(string, "dexerity", 7) == 0)
+			else if (strncmp(string, "dexerity", 7) == 0)
 			{
 				free(string);
 				return DEXERITY;
 			}
-			if(strncmp(string, "wits", 4) == 0)
+			if (strncmp(string, "wits", 4) == 0)
 			{
 				free(string);
 				return WITS;
@@ -176,27 +176,27 @@ coreStat getCoreStatFromString(char * inputString, int stringLength)
 	// Worst case, it's definitely a dirty string, compare them all:
 	else
 	{
-			if(strncmp(string, "wits", 4) == 0)
+			if (strncmp(string, "wits", 4) == 0)
 			{
 				free(string);
 				return WITS;
 			}
-			else if(strncmp(string, "intellect", 8) == 0)
+			else if (strncmp(string, "intellect", 8) == 0)
 			{
 				free(string);
 				return INTELLECT;
 			}
-			else if(strncmp(string, "strength", 7) == 0)
+			else if (strncmp(string, "strength", 7) == 0)
 			{
 				free(string);
 				return STRENGTH;
 			}
-			else if(strncmp(string, "endurance", 8) == 0)
+			else if (strncmp(string, "endurance", 8) == 0)
 			{
 				free(string);
 				return ENDURANCE;
 			}
-			else if(strncmp(string, "dexerity", 7) == 0)
+			else if (strncmp(string, "dexerity", 7) == 0)
 			{
 				free(string);
 				return DEXERITY;
@@ -209,6 +209,7 @@ coreStat getCoreStatFromString(char * inputString, int stringLength)
 	}
 }
 
+// Deallocate a player's information including the skill lists and stats:
 int deallocatePlayer(playerInfo * playerToDeallocate)
 {
 	// Deallocate the skill list:

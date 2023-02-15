@@ -124,7 +124,7 @@ void * outputThreadHandler(void * parameters)
 					{
 						break;
 					}
-					if (&connectedPlayers[index] == message->recipients[targetIndex])
+					if (&connectedPlayers[index] == message->recipients[sentCount])
 					{
 						sentCount++;
 						messageSend(tlssessions[index], message->content);
@@ -156,7 +156,7 @@ void userInputSanatize(char * inputString, int length)
 	inputString[length - 1] = '\0';
 }
 
-// Sanatize user names so they display correctly;
+// Sanatize user names so they display correctly:
 void userNameSanatize(char * inputString, int length)
 {
 	for(int index = 0; index <= length; index++)
