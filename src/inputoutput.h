@@ -26,14 +26,14 @@ typedef struct userMessage
 	char messageContent[MAX];
 } userMessage;
 
-// Contains a userMessage and a pointer to the playerInfo of the connection which sent it:
+// Contains a message sent to the server and a pointer to the playerInfo of the connection which sent it:
 typedef struct inputMessage
 {
 	playerInfo * sender;
 	userMessage * content;
 } inputMessage;
 
-// Contains a userMessage and pointers to the playerInfo of the recipients and the number of them:
+// Contains a message to be sent, the amount of recipients, and pointers to their playerInfo:
 typedef struct outputMessage
 {
 	int recipientsCount;
@@ -41,7 +41,7 @@ typedef struct outputMessage
 	playerInfo ** recipients;
 } outputMessage;
 
-// Contains the relevant parameters for the outputThreadLoop function:
+// Contains pointers to the necessary information to be shared outputThreadHandler function:
 typedef struct outputThreadParameters
 {
 	queue * outputQueue;
