@@ -301,7 +301,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 		talkMessage->senderName[0] = '\0';
 
 		// Temporary message until we can implement objects, events, and challenges.
-		strcpy(talkMessage->messageContent, "The try command is currently not implemented. Implement it if you want to use it.\n");
+		strcpy(talkMessage->messageContent, "The talk command is currently not implemented. Implement it if you want to use it.\n");
 		
 		// Allocate an outputMessage for the queue:
 		outputMessage * talkOutputMessage = createTargetedOutputMessage(talkMessage, &currentCommand->caller, 1);
