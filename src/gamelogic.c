@@ -297,7 +297,20 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 	// Talk command: Allows the player to begin a chat session with another player:
 	if (strncmp(currentCommand->command, "talk", 4) == 0)
 	{
-		// TODO: Implement.
+		userMessage * talkMessage = malloc(sizeof(userMessage));
+		talkMessage->senderName[0] = '\0';
+
+		// Temporary message until we can implement objects, events, and challenges.
+		strcpy(talkMessage->messageContent, "The try command is currently not implemented. Implement it if you want to use it.\n");
+		
+		// Allocate an outputMessage for the queue:
+		outputMessage * talkOutputMessage = createTargetedOutputMessage(talkMessage, &currentCommand->caller, 1);
+
+		// Queue the outputMessage:
+		pushQueue(parameters->outputQueue, talkOutputMessage, OUTPUT_MESSAGE);
+
+		// Free the userMessage:
+		free(talkMessage);
 	}
 	// Stat command: Displays the current character's sheet.
 	if (strncmp(currentCommand->command, "stat", 4) == 0)
