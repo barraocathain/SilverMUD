@@ -56,35 +56,59 @@ void * gameLogicHandler(void * parameters)
 				strncpy(currentInput->content->senderName, currentInput->sender->playerName, 32);
 				currentInput->content->senderName[31] = '\0';
 
-				// Allocate an array of playerInfo to store the current players in the area for the output message:
-				playerInfo ** recipients = malloc(sizeof(playerInfo*) * PLAYERCOUNT);
-
-				// Initialize them all to NULL:
-				for (int index = 0; index < PLAYERCOUNT; index++)
+				if(currentInput->sender->talkingWith == NULL)
 				{
-					recipients[index] = NULL;
-				}
+					// Allocate an array of playerInfo to store the current players in the area for the output message:
+					playerInfo ** recipients = calloc(PLAYERCOUNT, sizeof(playerInfo*));
 
-				// Get the players in the current area and add them to our array:
-				int recipientIndex = 0;
-				for (int playerIndex = 0; playerIndex < *threadParameters->playerCount; playerIndex++)
-				{
-					if (threadParameters->connectedPlayers[playerIndex].currentArea == currentInput->sender->currentArea)
+					// Initialize them all to NULL:
+					for (int index = 0; index < PLAYERCOUNT; index++)
 					{
-						recipients[recipientIndex] = &threadParameters->connectedPlayers[playerIndex];
-						recipientIndex++;
+						recipients[index] = NULL;
 					}
-				}
 
-				// Create the outputMessage for the queue:
-				outputMessage * newOutputMessage = createTargetedOutputMessage(currentInput->content, recipients, recipientIndex);
+					// Get the players in the current area and add them to our array:
+					int recipientIndex = 0;
+					for (int playerIndex = 0; playerIndex < *threadParameters->playerCount; playerIndex++)
+					{
+						if (threadParameters->connectedPlayers[playerIndex].currentArea == currentInput->sender->currentArea)
+						{
+							recipients[recipientIndex] = &threadParameters->connectedPlayers[playerIndex];
+							recipientIndex++;
+						}
+					}
 
-				// Push the message onto the queue:
-				pushQueue(threadParameters->outputQueue, newOutputMessage, OUTPUT_MESSAGE);
+					// Create the outputMessage for the queue:
+					outputMessage * newOutputMessage = createTargetedOutputMessage(currentInput->content, recipients, recipientIndex);
+
+					// Push the message onto the queue:
+					pushQueue(threadParameters->outputQueue, newOutputMessage, OUTPUT_MESSAGE);
 				
-				// Free the array;
-				free(recipients);
+					// Free the array;
+					free(recipients);
+				}
+				else
+				{
+					// Allocate an array of one playerInfo to store the pointer to the other player in the conversation:
+					playerInfo ** recipients = calloc(1, (sizeof(playerInfo*)));
+
+					// Set the talkingWith player as the recipient of the message:
+					recipients[0] = currentInput->sender->talkingWith;
+
+					// There's only one recipient:
+					int recipientIndex = 1;
+
+					// Create the outputMessage for the queue:
+					outputMessage * newOutputMessage = createTargetedOutputMessage(currentInput->content, recipients, recipientIndex);
+
+					// Push the message onto the queue:
+					pushQueue(threadParameters->outputQueue, newOutputMessage, OUTPUT_MESSAGE);
+				
+					// Free the array;
+					free(recipients);
+				}
 			}
+			bzero(currentInput, sizeof(inputMessage));
 			currentInput = NULL;
 			threadParameters->inputQueue->lock = false;
 			popQueue(threadParameters->inputQueue);
@@ -104,11 +128,12 @@ void queueMessagedCommand(queue * queue, inputMessage * messageToQueue)
 	
 	// Seperate the command from it's arguments:
 	strtok(messageToQueue->content->messageContent, " ");
-
+	
 	// Copy the command and arguments to the new commandEvent:
 	memcpy(newCommand->command, &messageToQueue->content->messageContent[1], 16);
 	memcpy(newCommand->arguments, &messageToQueue->content->messageContent[strlen(newCommand->command) + 2],
 		   MAX - (strlen(newCommand->command) + 2));
+
 
 	// Ensure the arguments are safe to parse, without adding newlines:
 	userNameSanatize(newCommand->command, 16);
@@ -116,7 +141,7 @@ void queueMessagedCommand(queue * queue, inputMessage * messageToQueue)
 	
 	userNameSanatize(newCommand->arguments, MAX);
 	newCommand->arguments[MAX - 1] = '\0';
-	
+
 	// Lowercase the command for easier comparison:
 	for (char * character = newCommand->command; *character; ++character)
 	{
@@ -159,7 +184,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 		return -1;
 	}
 
-	// Hash the command and execute the relevant functionality:
+	// Switch to the relevant command based on the hash:
 	switch (hashCommand(currentCommand->command, strlen(currentCommand->command)))
 	{
 		// Look command: Returns the description of the current area and paths:
@@ -390,7 +415,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 		case 163143:
 		{
 			// Allocate the userMessage to send:
-			userMessage * tryMessage = malloc(sizeof(userMessage));
+			userMessage * tryMessage = calloc(1, (sizeof(userMessage)));
 			tryMessage->senderName[0] = '\0';
 
 			// Temporary message until we can implement objects, events, and challenges.
@@ -521,14 +546,47 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 		}
 		
 		// Talk command: Allows the player to begin a chat session with another player:
-		case 601264:
+		case 6012644:
 		{
-			userMessage * talkMessage = malloc(sizeof(userMessage));
+			userMessage * talkMessage = calloc(1, sizeof(userMessage));
 			talkMessage->senderName[0] = '\0';
 
-			// Temporary message until we can implement objects, events, and challenges.
-			strcpy(talkMessage->messageContent, "The talk command is currently not implemented. Implement it if you want to use it.\n");
-		
+			// If there's no name specified, end the current chat sessions.
+			if (currentCommand->arguments[0] == '\0' || currentCommand->arguments == NULL)
+			{
+				currentCommand->caller->talkingWith = NULL;
+				strcpy(talkMessage->messageContent, "Conversation ended.\n");
+			}
+			else
+			{
+				for(int playerIndex = 0; playerIndex < *parameters->playerCount; playerIndex++)
+				{
+					if(strncmp(currentCommand->arguments, parameters->connectedPlayers[playerIndex].playerName, 31) == 0)
+					{
+						currentCommand->caller->talkingWith = &(parameters->connectedPlayers[playerIndex]);
+
+						// Fill out the message to inform the receiving user what is happening:
+						strncpy(talkMessage->messageContent, currentCommand->caller->playerName, 31);
+						strcat(talkMessage->messageContent, " is talking to you. \n");
+
+						playerInfo ** recipients = calloc(1, (sizeof(playerInfo*)));
+						recipients[0] = &(parameters->connectedPlayers[playerIndex]);
+						
+						// Allocate an outputMessage for the receiving user:
+						outputMessage * talkReceiverMessage = createTargetedOutputMessage(talkMessage, recipients, 1);
+
+						// Queue the outputMessage:
+						pushQueue(parameters->outputQueue, talkReceiverMessage, OUTPUT_MESSAGE);
+
+						// Prep the message to the calling user.
+						strcpy(talkMessage->messageContent, "Conversation begun with: ");
+						strcat(talkMessage->messageContent, parameters->connectedPlayers[playerIndex].playerName);
+						strcat(talkMessage->messageContent, ".\n");
+					}
+				}
+					
+			}
+			
 			// Allocate an outputMessage for the queue:
 			outputMessage * talkOutputMessage = createTargetedOutputMessage(talkMessage, &currentCommand->caller, 1);
 
@@ -545,7 +603,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 		case 5284234:
 		{
 			// Allocate a userMessage containing null characters as the first char in both fields:
-			userMessage * exitMessage = malloc(sizeof(userMessage));
+			userMessage * exitMessage = calloc(1, (sizeof(userMessage)));
 			exitMessage->senderName[0] = '\0';
 			exitMessage->messageContent[0] = '\0';
 
@@ -595,6 +653,8 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 	}
 
 	// Remove the current command and unlock the queue:
+	bzero(currentCommand->command, sizeof(char) * 16);
+	bzero(currentCommand->arguments, sizeof(char) * MAX);
 	currentCommand = NULL;
 	queue->lock = false;	
 	popQueue(queue);

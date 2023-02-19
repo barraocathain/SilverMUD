@@ -72,7 +72,8 @@ void * messageSender(void * parameters)
 		}
 
 		// Send the message off to the server:
-		messageSend(tlsSession, &sendBuffer);		
+		messageSend(tlsSession, &sendBuffer);
+		bzero(&sendBuffer, sizeof(char) * MAX);
 	}
 
 	// Rejoin the main thread:

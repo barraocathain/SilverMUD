@@ -9,6 +9,7 @@
 #include "linkedlist.h"
 
 // Let the compiler know there will be structs defined elsewhere:
+typedef struct playerInfo playerInfo;
 typedef struct playerArea playerArea;
 typedef struct playerPath playerPath;
 typedef struct listNode listNode;
@@ -49,8 +50,9 @@ typedef struct playerSkill
 // Information about a single player's character:
 typedef struct playerInfo
 {
-	char playerName[32];
+	playerInfo * talkingWith;
 	playerArea * currentArea;
+	char playerName[32];
 	statBlock * stats;
 	list * skills; 
 } playerInfo;
