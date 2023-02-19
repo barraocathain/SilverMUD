@@ -36,7 +36,7 @@ void sigintHandler(int signal)
 int main(int argc, char ** argv)
 {
 	time_t currentTime;
-	unsigned delay = 4000;
+	unsigned delay = 800;
 	int socketFileDesc, connectionFileDesc, length, clientsAmount,
 		socketCheck, activityCheck, returnVal;
 	fd_set connectedClients;
@@ -46,19 +46,25 @@ int main(int argc, char ** argv)
 	playerInfo connectedPlayers[PLAYERCOUNT];
 	char testString[32] = "Hehe.";
 	struct sockaddr_in serverAddress, clientAddress;
+	char motd[2048] = "Please login with the /join command.";
 	queue * inputQueue = createQueue(), * outputQueue = createQueue();
-
+	
 	// Parse command-line options:
 	int currentopt = 0;
-	while ((currentopt = getopt(argc, argv, "d:")) != -1)
+	while ((currentopt = getopt(argc, argv, "d:m:")) != -1)
 	{
 		switch(currentopt)
 		{
-		case 'd':
-		{
-			delay = atoi(optarg);
-			break;
-		}
+			case 'd':
+			{
+				delay = atoi(optarg);
+				break;
+			}
+			case 'm':
+			{
+				strncpy(motd, optarg, strlen(optarg) + 1);
+				break;
+			}
 		}
 	}
 	
@@ -68,7 +74,7 @@ int main(int argc, char ** argv)
 	// -==[ TEST GAME-STATE INITIALIZATION ]==-
 	// Initialize test areas:
 	list * areas = createList(AREA);
-	addToList(areas, createArea("Login Area", "Please login with the /join command."), AREA);
+	addToList(areas, createArea("Login Area", motd), AREA);
 
 	// Create the areas:
 	addToList(areas, createArea("Octal One - Docking Bay Alpha",

@@ -55,6 +55,9 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue);
 void queueCommand(queue * queue, char * command, char * arguments, int commandLength, int argumentsLength,
 				  playerInfo * callingPlayer);
 
+// A hash function for distinguishing commands for the game logic handler:
+unsigned int hashCommand(char * command, unsigned int commandLength);
+
 // ============================
 // -=[ Gameplay Primitives ]=-:
 // ============================
