@@ -80,7 +80,7 @@ void * gameLogicHandler(void * parameters)
 
 					// Create the outputMessage for the queue:
 					outputMessage * newOutputMessage = createTargetedOutputMessage(currentInput->content, recipients, recipientIndex);
-
+					
 					// Push the message onto the queue:
 					pushQueue(threadParameters->outputQueue, newOutputMessage, OUTPUT_MESSAGE);
 				
@@ -544,7 +544,50 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 			free(formattedString);
 			break;
 		}
-		
+		// Shout command: Allows the player to talk to everyone in the area if they are in a conversation.
+		case 220952831:
+		{
+			// Allocate an array of playerInfo to store the current players in the area for the output message:
+			playerInfo ** recipients = calloc(PLAYERCOUNT, sizeof(playerInfo*));
+			
+			// Initialize them all to NULL:
+			for (int index = 0; index < PLAYERCOUNT; index++)
+			{
+				recipients[index] = NULL;
+			}
+			
+			// Get the players in the current area and add them to our array:
+			int recipientIndex = 0;
+			for (int playerIndex = 0; playerIndex < *parameters->playerCount; playerIndex++)
+			{
+				if (parameters->connectedPlayers[playerIndex].currentArea == currentCommand->caller->currentArea)
+				{
+					recipients[recipientIndex] = &parameters->connectedPlayers[playerIndex];
+					recipientIndex++;
+				}
+			}
+
+			// Create a userMessage to be filled with the data from the command's arguments and caller:
+			userMessage * shoutMessage = calloc(1, sizeof(userMessage));
+
+			// Copy in the data and terminate it:
+			strncpy(shoutMessage->senderName, currentCommand->caller->playerName, 32);
+			shoutMessage->senderName[31] = '\0';
+			strncpy(shoutMessage->messageContent, currentCommand->arguments, MAX);
+			shoutMessage->messageContent[MAX - 1] = '\0';
+			strncat(shoutMessage->messageContent, "\n", MAX);
+			
+			// Create the outputMessage for the queue:
+			outputMessage * shoutOutputMessage = createTargetedOutputMessage(shoutMessage, recipients, recipientIndex);
+
+			// Push the message onto the output queue:
+			pushQueue(parameters->outputQueue, shoutOutputMessage, OUTPUT_MESSAGE);
+			
+			// Free the array:
+			free(recipients);
+
+			break;
+		}
 		// Talk command: Allows the player to begin a chat session with another player:
 		case 6012644:
 		{
@@ -555,7 +598,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 			if (currentCommand->arguments[0] == '\0' || currentCommand->arguments == NULL)
 			{
 				currentCommand->caller->talkingWith = NULL;
-				strcpy(talkMessage->messageContent, "Conversation ended.\n");
+				strcpy(talkMessage->messageContent, "Conversation ended.");
 			}
 			else
 			{
@@ -567,7 +610,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 
 						// Fill out the message to inform the receiving user what is happening:
 						strncpy(talkMessage->messageContent, currentCommand->caller->playerName, 31);
-						strcat(talkMessage->messageContent, " is talking to you. \n");
+						strcat(talkMessage->messageContent, " is talking to you.");
 
 						playerInfo ** recipients = calloc(1, (sizeof(playerInfo*)));
 						recipients[0] = &(parameters->connectedPlayers[playerIndex]);
@@ -581,7 +624,6 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 						// Prep the message to the calling user.
 						strcpy(talkMessage->messageContent, "Conversation begun with: ");
 						strcat(talkMessage->messageContent, parameters->connectedPlayers[playerIndex].playerName);
-						strcat(talkMessage->messageContent, ".\n");
 					}
 				}
 					
