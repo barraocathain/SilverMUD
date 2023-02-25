@@ -29,6 +29,7 @@ typedef struct threadparameters
 	bool loggingFlag;
 	WINDOW * window;
 	int characterDelay;
+	char * prompt; 
 } threadparameters;
 
 // Use sockaddr as a type:
@@ -45,13 +46,15 @@ void * messageSender(void * parameters)
 	FILE * loggingStream = threadParameters->loggingStream;
 	bool loggingFlag = threadParameters->loggingFlag;
 	WINDOW * window = threadParameters->window;
+	char * prompt = threadParameters->prompt;
 	userMessage sendBuffer;
 
 	// Repeatedly get input from the user, place it in a userMessage, and send it to the server:
 	while (!shouldExit)
 	{
 		// Print the prompt:
-		wprintw(window, "\n\n\nCOMM-LINK> ");
+		wprintw(window, "\n\n\n");
+		wprintw(window, prompt);
 		if (wgetnstr(window, sendBuffer.messageContent, MAX) == ERR)
 		{
 			// Quit if there's any funny business with getting input:
@@ -111,8 +114,15 @@ void * messageReceiver(void * parameters)
 		// Check if it's a server message:
 		else if (receiveBuffer.senderName[0] == '\0')
 		{
+			// Check if the server wants to change the prompt:
+			if (receiveBuffer.senderName[1] != '\0')
+			{
+				strncpy(threadParameters->prompt, &receiveBuffer.senderName[1], 63);
+				threadParameters->prompt[63] = '\0';
+			}
+			
 			// Check if it's a command to disconnect:
-			if (receiveBuffer.messageContent[0] == '\0') 
+			if (receiveBuffer.messageContent[0] == '\0' && receiveBuffer.senderName[1] != '\0') 
 			{ 
 				shouldExit = true; 
 				pthread_exit(NULL); 
@@ -307,6 +317,7 @@ int main(int argc, char ** argv)
 	logArea->tlsSession = tlsSession;
 	logArea->loggingFlag = chatLogging;
 	logArea->characterDelay = characterDelay;
+
 	if (chatLog != NULL)
 	{
 		logArea->loggingStream = chatLog;
@@ -314,13 +325,18 @@ int main(int argc, char ** argv)
 	messageArea->window = newwin(3, COLS - 2, LINES - 4, 1);
 	messageArea->tlsSession = tlsSession;
 	messageArea->loggingFlag = gameLogging;
-
+	
 	// Set the appropriate log pointers:
 	if (gameLog != NULL)
 	{
 		messageArea->loggingStream = gameLog;
 	}
-	
+
+	// Set up the string to hold the current "prompt" that the server has sent:
+	messageArea->prompt = calloc(64, sizeof(char));
+	strcpy(messageArea->prompt, "> ");
+	logArea->prompt = messageArea->prompt;
+
 	// Set the two windows to scroll:
 	scrollok(logArea->window, true);
 	scrollok(messageArea->window, true);
