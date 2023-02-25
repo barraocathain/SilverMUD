@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <stdbool.h>
 #include <pthread.h>
 #include <ncurses.h>
@@ -73,7 +74,7 @@ void * messageSender(void * parameters)
 
 		// Send the message off to the server:
 		messageSend(tlsSession, &sendBuffer);
-		bzero(&sendBuffer, sizeof(char) * MAX);
+		memset(&sendBuffer, 0, sizeof(char) * MAX);
 	}
 
 	// Rejoin the main thread:
