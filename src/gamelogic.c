@@ -599,6 +599,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 			{
 				currentCommand->caller->talkingWith = NULL;
 				strcpy(talkMessage->messageContent, "Conversation ended.");
+				strncat(&talkMessage->senderName[1], " > ", 4);
 			}
 			else
 			{
@@ -609,6 +610,8 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 						currentCommand->caller->talkingWith = &(parameters->connectedPlayers[playerIndex]);
 
 						// Fill out the message to inform the receiving user what is happening:
+						strncat(&talkMessage->senderName[1], currentCommand->caller->playerName, 27);
+ 						strncat(&talkMessage->senderName[1], " > ", 4);
 						strncpy(talkMessage->messageContent, currentCommand->caller->playerName, 31);
 						strcat(talkMessage->messageContent, " is talking to you.");
 
@@ -626,9 +629,12 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 						strcat(talkMessage->messageContent, parameters->connectedPlayers[playerIndex].playerName);
 					}
 				}
-					
 			}
-			
+			if(talkMessage->messageContent[0] == '\0')
+			{
+				strcpy(talkMessage->messageContent, "There is no player by that name connected.");
+			}
+
 			// Allocate an outputMessage for the queue:
 			outputMessage * talkOutputMessage = createTargetedOutputMessage(talkMessage, &currentCommand->caller, 1);
 
@@ -683,6 +689,21 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 				{
 					strncpy(currentCommand->caller->playerName, currentCommand->arguments, 16);
 					currentCommand->caller->currentArea = getFromList(parameters->areaList, 1)->area;
+
+					// Allocate a userMessage containing null characters as the first char in both fields:
+					userMessage * joinMessage = calloc(1, (sizeof(userMessage)));
+					memcpy(joinMessage->senderName, "\0 > \0", 5);
+					strcpy(joinMessage->messageContent, "Logged in successfully.");
+
+					// Allocate an outputMessage for the queue:
+					outputMessage * joinOutputMessage = createTargetedOutputMessage(joinMessage, &currentCommand->caller, 1);
+			
+					// Queue the outputMessage:
+					pushQueue(parameters->outputQueue, joinOutputMessage, OUTPUT_MESSAGE);
+			
+					// Free the userMessage
+					free(joinMessage);
+
 					// Call the look command after joining. It's fine to unlock, because the loop won't
 					// continue until the command is queued:
 					queue->lock = false;

@@ -52,9 +52,13 @@ void * messageSender(void * parameters)
 	// Repeatedly get input from the user, place it in a userMessage, and send it to the server:
 	while (!shouldExit)
 	{
-		// Print the prompt:
+		usleep(100000);
+		// Clear the window:
 		wprintw(window, "\n\n\n");
+
+		// Print the prompt:
 		wprintw(window, prompt);
+		
 		if (wgetnstr(window, sendBuffer.messageContent, MAX) == ERR)
 		{
 			// Quit if there's any funny business with getting input:
@@ -122,7 +126,7 @@ void * messageReceiver(void * parameters)
 			}
 			
 			// Check if it's a command to disconnect:
-			if (receiveBuffer.messageContent[0] == '\0' && receiveBuffer.senderName[1] != '\0') 
+			if (receiveBuffer.messageContent[0] == '\0') 
 			{ 
 				shouldExit = true; 
 				pthread_exit(NULL); 
@@ -333,8 +337,8 @@ int main(int argc, char ** argv)
 	}
 
 	// Set up the string to hold the current "prompt" that the server has sent:
-	messageArea->prompt = calloc(64, sizeof(char));
-	strcpy(messageArea->prompt, "> ");
+	messageArea->prompt = calloc(32, sizeof(char));
+	strcpy(messageArea->prompt, " Login > ");
 	logArea->prompt = messageArea->prompt;
 
 	// Set the two windows to scroll:

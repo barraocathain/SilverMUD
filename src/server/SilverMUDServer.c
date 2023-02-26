@@ -285,7 +285,7 @@ int main(int argc, char ** argv)
 					while (returnVal < 0 && gnutls_error_is_fatal(returnVal) == 0);
 					
 					// Send a greeting message:
-					strcpy(sendBuffer.senderName, "");
+					memcpy(sendBuffer.senderName, "\0 Login > \0", 11);
 					strcpy(sendBuffer.messageContent, "Welcome to the server!");
 					messageSend(tlssessions[index], &sendBuffer);
 					strcpy(receiveBuffer.messageContent, "/look");
