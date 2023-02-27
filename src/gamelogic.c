@@ -258,9 +258,9 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 							memset(lookMessage, 0, sizeof(userMessage));
 							charCount = 0;
 						}
-						snprintf(formattedString, 38, "\n%02d. %32s", playerNumber++,
+						snprintf(formattedString, 45, "\n%02d. %31s", playerNumber++,
 								 parameters->connectedPlayers[index].playerName);
-						strncat(lookMessage->messageContent, formattedString, 37);
+						strncat(lookMessage->messageContent, formattedString, 64);
 						charCount += 38;
 
 						// Allocate another outputMessage for the queue:
@@ -646,7 +646,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 						currentCommand->caller->talkingWith = &(parameters->connectedPlayers[playerIndex]);
 
 						// Fill out the message to inform the receiving user what is happening:
-						strncpy(talkMessage->messageContent, currentCommand->caller->playerName, 31);
+						strncpy(talkMessage->messageContent, currentCommand->caller->playerName, 32);
 						strcat(talkMessage->messageContent, " is talking to you.");
 
 						playerInfo ** recipients = calloc(1, (sizeof(playerInfo*)));
@@ -659,7 +659,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 						pushQueue(parameters->outputQueue, talkReceiverMessage, OUTPUT_MESSAGE);
 
 						// Prep the message to the calling user.
-						strncat(&talkMessage->senderName[1], currentCommand->arguments, 27);
+						memcpy(&talkMessage->senderName[1], currentCommand->arguments, sizeof(char) * 27);
 						strncat(&talkMessage->senderName[1], " > ", 4);
 						strcpy(talkMessage->messageContent, "Conversation begun with: ");
 						strcat(talkMessage->messageContent, parameters->connectedPlayers[playerIndex].playerName);
