@@ -235,8 +235,44 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 				// Queue the outputMessage:
 				pushQueue(parameters->outputQueue, lookOutputMessage, OUTPUT_MESSAGE);
 			}
-			free(lookMessage);
 
+			// Clear the message:
+			memset(lookMessage, 0, sizeof(userMessage));
+			if(currentCommand->caller->currentArea != getFromList(parameters->areaList, 0)->area)
+			{
+				// Show the players in the area:
+				charCount = 23;
+				strncat(lookMessage->messageContent, "These players are here:", 24);
+			
+				int playerNumber = 1;
+				for(int index = 0; index < *(parameters->playerCount); index++)
+				{
+					if (parameters->connectedPlayers[index].currentArea == currentCommand->caller->currentArea)
+					{
+						if ((charCount + 38) >= MAX)
+						{
+							lookOutputMessage = createTargetedOutputMessage(lookMessage, &currentCommand->caller, 1);
+						
+							// Queue the outputMessage:
+							pushQueue(parameters->outputQueue, lookOutputMessage, OUTPUT_MESSAGE);
+							memset(lookMessage, 0, sizeof(userMessage));
+							charCount = 0;
+						}
+						snprintf(formattedString, 38, "\n%02d. %32s", playerNumber++,
+								 parameters->connectedPlayers[index].playerName);
+						strncat(lookMessage->messageContent, formattedString, 37);
+						charCount += 38;
+
+						// Allocate another outputMessage for the queue:
+						lookOutputMessage = createTargetedOutputMessage(lookMessage, &currentCommand->caller, 1);
+						
+						// Queue the outputMessage:
+						pushQueue(parameters->outputQueue, lookOutputMessage, OUTPUT_MESSAGE);
+					}
+				}
+			}
+			
+			free(lookMessage);
 			break;
 		}
 		
