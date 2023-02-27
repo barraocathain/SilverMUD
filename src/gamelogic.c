@@ -646,8 +646,6 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 						currentCommand->caller->talkingWith = &(parameters->connectedPlayers[playerIndex]);
 
 						// Fill out the message to inform the receiving user what is happening:
-						strncat(&talkMessage->senderName[1], currentCommand->caller->playerName, 27);
- 						strncat(&talkMessage->senderName[1], " > ", 4);
 						strncpy(talkMessage->messageContent, currentCommand->caller->playerName, 31);
 						strcat(talkMessage->messageContent, " is talking to you.");
 
@@ -661,6 +659,8 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 						pushQueue(parameters->outputQueue, talkReceiverMessage, OUTPUT_MESSAGE);
 
 						// Prep the message to the calling user.
+						strncat(&talkMessage->senderName[1], currentCommand->arguments, 27);
+						strncat(&talkMessage->senderName[1], " > ", 4);
 						strcpy(talkMessage->messageContent, "Conversation begun with: ");
 						strcat(talkMessage->messageContent, parameters->connectedPlayers[playerIndex].playerName);
 					}
