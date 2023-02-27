@@ -89,14 +89,32 @@ void * gameLogicHandler(void * parameters)
 				}
 				else
 				{
-					// Allocate an array of one playerInfo to store the pointer to the other player in the conversation:
-					playerInfo ** recipients = calloc(1, (sizeof(playerInfo*)));
+					// Allocate an array of two playerInfo to store the pointers to the players in the conversation:
+					playerInfo ** recipients = calloc(2, (sizeof(playerInfo*)));
 
-					// Set the talkingWith player as the recipient of the message:
-					recipients[0] = currentInput->sender->talkingWith;
+					// Find which player is first in the player list:
+					bool senderIsFirst = false;
 
+					for(int playerIndex = 0; playerIndex < *threadParameters->playerCount; playerIndex++)
+					{
+						if(&threadParameters->connectedPlayers[playerIndex] == currentInput->sender)
+						{
+							senderIsFirst = true;
+							break;
+						}
+						if(&threadParameters->connectedPlayers[playerIndex] == currentInput->sender->talkingWith)
+						{
+							senderIsFirst = false;
+							break;
+						}
+					}
+
+					// Set the proper recipients:
+					recipients[0] = (senderIsFirst) ? currentInput->sender : currentInput->sender->talkingWith;
+					recipients[1] = (senderIsFirst) ? currentInput->sender->talkingWith : currentInput->sender;
+					
 					// There's only one recipient:
-					int recipientIndex = 1;
+					int recipientIndex = 2;
 
 					// Create the outputMessage for the queue:
 					outputMessage * newOutputMessage = createTargetedOutputMessage(currentInput->content, recipients, recipientIndex);
@@ -261,15 +279,14 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 						snprintf(formattedString, 45, "\n%02d. %31s", playerNumber++,
 								 parameters->connectedPlayers[index].playerName);
 						strncat(lookMessage->messageContent, formattedString, 64);
-						charCount += 38;
-
-						// Allocate another outputMessage for the queue:
-						lookOutputMessage = createTargetedOutputMessage(lookMessage, &currentCommand->caller, 1);
-						
-						// Queue the outputMessage:
-						pushQueue(parameters->outputQueue, lookOutputMessage, OUTPUT_MESSAGE);
+						charCount += 38;				
 					}
 				}
+				// Allocate another outputMessage for the queue:
+				lookOutputMessage = createTargetedOutputMessage(lookMessage, &currentCommand->caller, 1);
+						
+				// Queue the outputMessage:
+				pushQueue(parameters->outputQueue, lookOutputMessage, OUTPUT_MESSAGE);
 			}
 			
 			free(lookMessage);
