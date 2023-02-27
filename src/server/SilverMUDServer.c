@@ -9,6 +9,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <ncurses.h>
 #include <pthread.h>
 #include <sys/types.h>
@@ -131,7 +132,7 @@ int main(int argc, char ** argv)
 	slowPrint("\n--==== \033[33;40mSILVERKIN INDUSTRIES\033[0m COMM-LINK SERVER ====--\nVersion Alpha 0.5\n", delay);
 
 	// Seed random number generator from the current time:
-	srandom((unsigned)time(&currentTime));
+	srand((unsigned)time(&currentTime));
 	
 	// Initialize the sockets to 0, so we don't crash.
 	for (int index = 0; index < PLAYERCOUNT; index++)  
@@ -152,7 +153,7 @@ int main(int argc, char ** argv)
 		slowPrint("\tSocket Creation is:\t\033[32;40mGREEN.\033[0m\n", delay);
 	}
 
-	bzero(&serverAddress, sizeof(serverAddress));
+	memset(&serverAddress, 0, sizeof(serverAddress));
   
 	// Assign IP and port:
 	serverAddress.sin_family = AF_INET;
@@ -284,7 +285,7 @@ int main(int argc, char ** argv)
 					while (returnVal < 0 && gnutls_error_is_fatal(returnVal) == 0);
 					
 					// Send a greeting message:
-					strcpy(sendBuffer.senderName, "");
+					memcpy(sendBuffer.senderName, "\0 Login > \0", 11);
 					strcpy(sendBuffer.messageContent, "Welcome to the server!");
 					messageSend(tlssessions[index], &sendBuffer);
 					strcpy(receiveBuffer.messageContent, "/look");

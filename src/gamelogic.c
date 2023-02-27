@@ -108,7 +108,7 @@ void * gameLogicHandler(void * parameters)
 					free(recipients);
 				}
 			}
-			bzero(currentInput, sizeof(inputMessage));
+			memset(currentInput, 0, sizeof(inputMessage));
 			currentInput = NULL;
 			threadParameters->inputQueue->lock = false;
 			popQueue(threadParameters->inputQueue);
@@ -204,7 +204,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 			pushQueue(parameters->outputQueue, lookOutputMessage, OUTPUT_MESSAGE);
 
 			//queueTargetedOutputMessage(parameters->outputQueue, lookMessage, &currentCommand->caller, 1);
-			bzero(lookMessage, sizeof(userMessage));
+			memset(lookMessage, 0, sizeof(userMessage));
 
 			// Loop through the paths and send the appropriate amount of messages:
 			int charCount = 13;
@@ -221,7 +221,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 						// Queue the outputMessage:
 						pushQueue(parameters->outputQueue, lookOutputMessage, OUTPUT_MESSAGE);
 
-						bzero(lookMessage, sizeof(userMessage));
+						memset(lookMessage, 0, sizeof(userMessage));
 						charCount = 0;
 					}
 					snprintf(formattedString, 64, "\n\t%ld. %s", index + 1,
@@ -314,7 +314,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 			// Queue the outputMessage:
 			pushQueue(parameters->outputQueue, statOutputMessage, OUTPUT_MESSAGE);
 		
-			bzero(statMessage->messageContent, sizeof(char) * MAX);
+			memset(statMessage->messageContent, 0, sizeof(char) * MAX);
 			if (currentCommand->caller->skills->head != NULL)
 			{			
 				size_t skillIndex = 0;
@@ -335,7 +335,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 
 						// Queue the outputMessage:
 						pushQueue(parameters->outputQueue, statOutputMessage, OUTPUT_MESSAGE);
-						bzero(statMessage, sizeof(userMessage));
+						memset(statMessage, 0, sizeof(userMessage));
 						charCount = 0;
 						break;
 					}
@@ -555,7 +555,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 					// Queue the outputMessage:
 					pushQueue(parameters->outputQueue, listOutputMessage, OUTPUT_MESSAGE);
 				
-					bzero(listMessage, sizeof(userMessage));
+					memset(listMessage, 0, sizeof(userMessage));
 					charCount = 0;
 					addNewline = false;
 				}
@@ -635,6 +635,7 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 			{
 				currentCommand->caller->talkingWith = NULL;
 				strcpy(talkMessage->messageContent, "Conversation ended.");
+				strncat(&talkMessage->senderName[1], " > ", 4);
 			}
 			else
 			{
@@ -645,6 +646,8 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 						currentCommand->caller->talkingWith = &(parameters->connectedPlayers[playerIndex]);
 
 						// Fill out the message to inform the receiving user what is happening:
+						strncat(&talkMessage->senderName[1], currentCommand->caller->playerName, 27);
+ 						strncat(&talkMessage->senderName[1], " > ", 4);
 						strncpy(talkMessage->messageContent, currentCommand->caller->playerName, 31);
 						strcat(talkMessage->messageContent, " is talking to you.");
 
@@ -662,9 +665,12 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 						strcat(talkMessage->messageContent, parameters->connectedPlayers[playerIndex].playerName);
 					}
 				}
-					
 			}
-			
+			if(talkMessage->messageContent[0] == '\0')
+			{
+				strcpy(talkMessage->messageContent, "There is no player by that name connected.");
+			}
+
 			// Allocate an outputMessage for the queue:
 			outputMessage * talkOutputMessage = createTargetedOutputMessage(talkMessage, &currentCommand->caller, 1);
 
@@ -719,6 +725,21 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 				{
 					strncpy(currentCommand->caller->playerName, currentCommand->arguments, 16);
 					currentCommand->caller->currentArea = getFromList(parameters->areaList, 1)->area;
+
+					// Allocate a userMessage containing null characters as the first char in both fields:
+					userMessage * joinMessage = calloc(1, (sizeof(userMessage)));
+					memcpy(joinMessage->senderName, "\0 > \0", 5);
+					strcpy(joinMessage->messageContent, "Logged in successfully.");
+
+					// Allocate an outputMessage for the queue:
+					outputMessage * joinOutputMessage = createTargetedOutputMessage(joinMessage, &currentCommand->caller, 1);
+			
+					// Queue the outputMessage:
+					pushQueue(parameters->outputQueue, joinOutputMessage, OUTPUT_MESSAGE);
+			
+					// Free the userMessage
+					free(joinMessage);
+
 					// Call the look command after joining. It's fine to unlock, because the loop won't
 					// continue until the command is queued:
 					queue->lock = false;
@@ -731,8 +752,8 @@ int evaluateNextCommand(gameLogicParameters * parameters, queue * queue)
 	}
 
 	// Remove the current command and unlock the queue:
-	bzero(currentCommand->command, sizeof(char) * 16);
-	bzero(currentCommand->arguments, sizeof(char) * MAX);
+	memset(currentCommand->command, 0, sizeof(char) * 16);
+	memset(currentCommand->arguments, 0, sizeof(char) * MAX);
 	currentCommand = NULL;
 	queue->lock = false;	
 	popQueue(queue);
@@ -783,7 +804,7 @@ outcome statCheck(playerInfo * player, int chance, coreStat statToCheck)
 			return ERROR;
 		}
 	}
-	int attempt = (random() % 100) + modifier;
+	int attempt = (rand() % 100) + modifier;
 	if (attempt >= chance)
 	{
 		if (attempt >= 98)
@@ -856,7 +877,7 @@ outcome skillCheck(playerInfo * player, int chance, char * skillName, size_t ski
 	}
 	
 	// Attempt the check:
-	int attempt = (random() % 100) + modifier;
+	int attempt = (rand() % 100) + modifier;
 	if (attempt >= chance)
 	{
 		if (attempt >= 98)
