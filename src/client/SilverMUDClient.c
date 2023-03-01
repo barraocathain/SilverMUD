@@ -52,7 +52,7 @@ void * messageSender(void * parameters)
 	// Repeatedly get input from the user, place it in a userMessage, and send it to the server:
 	while (!shouldExit)
 	{
-		usleep(100000);
+		usleep(200000);
 		// Clear the window:
 		wprintw(window, "\n\n\n");
 

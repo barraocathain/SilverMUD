@@ -436,7 +436,8 @@ bool getIndexFromList(list * list, void * data, listDataType type, size_t * inde
 		return false;
 	}
 
-	for(*index = 0; *index < list->itemCount; *index += 1)
+	// Search through the list, one-by-one, comparing the list items:
+	for (*index = 0; *index < list->itemCount; *index += 1)
 	{
 		switch (type)
 		{
