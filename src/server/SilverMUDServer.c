@@ -226,11 +226,12 @@ int main(int argc, char ** argv)
 	pthread_create(&outputThread, NULL, &outputThreadHandler, outputParameters);
 	slowPrint("\tOutput Thread is:\t\033[32;40mGREEN.\033[0m\n", delay);
 	
-
-	pthread_create(&schemeThread, NULL, &schemeHandler, NULL);
+	SchemeThreadParameters * schemeParameters = malloc(sizeof(SchemeThreadParameters));
+	schemeParameters->skillList = globalSkillList;
 	slowPrint("\tScheme Thread is:\t\033[32;40mGREEN.\033[0m\n", delay);
-
 	slowPrint("=====\n", delay);
+	pthread_create(&schemeThread, NULL, &schemeHandler, schemeParameters);
+	
 	while(true)
 	{
 		// Clear the set of file descriptors and add the master socket:
@@ -280,7 +281,7 @@ int main(int argc, char ** argv)
 				if (clientSockets[index] == 0)  
 				{  
 					clientSockets[index] = connectionFileDesc;  
-					printf("Adding to list of sockets as %d.\n", index);
+					//printf("Adding to list of sockets as %d.\n", index);
 					gnutls_transport_set_int(tlssessions[index], clientSockets[index]);
 					do 
 					{
