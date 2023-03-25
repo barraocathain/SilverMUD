@@ -12,6 +12,7 @@
 // Let the compiler know that we're going to define these types:
 typedef struct playerPath playerPath;
 typedef struct playerArea playerArea;
+typedef struct list list;
 
 // A path, which contains a name, and a pointer to the area which the player will travel to:
 struct playerPath

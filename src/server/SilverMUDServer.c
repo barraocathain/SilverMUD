@@ -26,6 +26,7 @@
 #include "../linkedlist.h"
 #include "../texteffects.h"
 #include "../inputoutput.h"
+#include "../schemeintegration.h"
 
 typedef struct sockaddr sockaddr;
 void sigintHandler(int signal)
@@ -41,7 +42,7 @@ int main(int argc, char ** argv)
 	int socketFileDesc, connectionFileDesc, length, clientsAmount,
 		socketCheck, activityCheck, returnVal;
 	fd_set connectedClients;
-	pthread_t gameLogicThread, outputThread;
+	pthread_t gameLogicThread, outputThread, schemeThread;
 	int clientSockets[PLAYERCOUNT];
 	userMessage sendBuffer, receiveBuffer;
 	playerInfo connectedPlayers[PLAYERCOUNT];
@@ -223,10 +224,13 @@ int main(int argc, char ** argv)
 	outputParameters->tlssessions = tlssessions;
 	outputParameters->connectedPlayers = connectedPlayers;
 	pthread_create(&outputThread, NULL, &outputThreadHandler, outputParameters);
-
 	slowPrint("\tOutput Thread is:\t\033[32;40mGREEN.\033[0m\n", delay);
-	slowPrint("=====\n", delay);
 	
+
+	pthread_create(&schemeThread, NULL, &schemeHandler, NULL);
+	slowPrint("\tScheme Thread is:\t\033[32;40mGREEN.\033[0m\n", delay);
+
+	slowPrint("=====\n", delay);
 	while(true)
 	{
 		// Clear the set of file descriptors and add the master socket:

@@ -4,9 +4,10 @@ clientsrc = $(wildcard src/*.c) \
 clientobj = $(clientsrc:.c=.o) 
 serversrc = $(wildcard src/*.c) \
 	    src/server/SilverMUDServer.c
-serverobj = $(serversrc:.c=.o) 
-CLIENTLDFLAGS= -lpthread -lncurses -lgnutls
-SERVERLDFLAGS= -lpthread -lncurses -lgnutls 
+serverobj = $(serversrc:.c=.o)
+CFLAGS = `pkg-config --cflags guile-3.0`
+CLIENTLDFLAGS= -lpthread -lncurses -lgnutls `pkg-config --libs guile-3.0`
+SERVERLDFLAGS= -lpthread -lncurses -lgnutls `pkg-config --libs guile-3.0`
 SilverMUDClient: $(clientobj)
 	gcc  -o $@ $^ $(CLIENTLDFLAGS)
 
