@@ -228,6 +228,7 @@ int main(int argc, char ** argv)
 	
 	SchemeThreadParameters * schemeParameters = malloc(sizeof(SchemeThreadParameters));
 	schemeParameters->skillList = globalSkillList;
+	schemeParameters->outputQueue = outputQueue;
 	slowPrint("\tScheme Thread is:\t\033[32;40mGREEN.\033[0m\n", delay);
 	slowPrint("=====\n", delay);
 	pthread_create(&schemeThread, NULL, &schemeHandler, schemeParameters);
