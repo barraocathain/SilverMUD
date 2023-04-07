@@ -1,5 +1,6 @@
 // schemeintegration.h: Function definitions for SilverMUD's Scheme integration.
 // Barra Ó Catháin, 2023.
+#include <string.h>
 #include <libguile.h>
 #include "schemeintegration.h"
 
@@ -10,6 +11,43 @@ SCM scheme_create_skill(SCM string, SCM skilllist)
 	char * skillName = scm_to_latin1_stringn(string, &skillNameLength);   
 	createSkill(scm_to_pointer(skilllist), skillName, skillNameLength, false);
 	free(skillName);
+	return SCM_BOOL_T;
+}
+
+// Change the description of an existing area in a list, given the number of the area in the list, from Scheme:
+SCM scheme_change_area_description(SCM newdescription, SCM areanumber, SCM arealist)
+{
+	// Check if the area exists:
+	list * areaList = scm_to_pointer(arealist);
+	size_t areaNumber = scm_to_size_t(areanumber);
+
+	if (areaList->type != AREA)
+	{
+		return SCM_BOOL_F;
+	}
+	
+	playerArea * area = getFromList(areaList, areaNumber)->area;
+
+	if (area == NULL)
+	{
+		return SCM_BOOL_F;
+	}
+
+	// Create a string from the Scheme string and copy it into the area:
+	size_t newDescriptionLength = 0;
+	char * newDescription = scm_to_locale_stringn(newdescription, &newDescriptionLength);
+	memset(area->areaDescription, 0, MAX - 35);
+	if (newDescriptionLength > MAX - 35)
+	{
+		memcpy(area->areaDescription, newDescription, MAX - 35);
+	}
+	else
+	{
+		memcpy(area->areaDescription, newDescription, newDescriptionLength);
+	}
+
+	free(newDescription);
+	
 	return SCM_BOOL_T;
 }
 
@@ -54,8 +92,10 @@ void * schemeHandler(void * parameters)
 	// Register the various functions:
 	scm_c_define_gsubr("create-skill", 2, 0, 0, &scheme_create_skill);
 	scm_c_define_gsubr("message-everyone", 3, 0, 0, &scheme_message_everyone);
-
+	scm_c_define_gsubr("change-area-description", 3, 0, 0, &scheme_change_area_description);
+	
 	// Define the various game state pointers as Scheme objects:
+	scm_c_define("area-list", scm_from_pointer(schemeThreadParameters->areaList, NULL));
 	scm_c_define("skill-list", scm_from_pointer(schemeThreadParameters->skillList, NULL));
 	scm_c_define("output-queue", scm_from_pointer(schemeThreadParameters->outputQueue, NULL));
 
