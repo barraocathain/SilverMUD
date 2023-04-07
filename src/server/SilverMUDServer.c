@@ -225,10 +225,12 @@ int main(int argc, char ** argv)
 	outputParameters->connectedPlayers = connectedPlayers;
 	pthread_create(&outputThread, NULL, &outputThreadHandler, outputParameters);
 	slowPrint("\tOutput Thread is:\t\033[32;40mGREEN.\033[0m\n", delay);
-	
+
+	// Prepare the Scheme handler thread:
 	SchemeThreadParameters * schemeParameters = malloc(sizeof(SchemeThreadParameters));
 	schemeParameters->skillList = globalSkillList;
 	schemeParameters->outputQueue = outputQueue;
+	schemeParameters->areaList = areas;
 	slowPrint("\tScheme Thread is:\t\033[32;40mGREEN.\033[0m\n", delay);
 	slowPrint("=====\n", delay);
 	pthread_create(&schemeThread, NULL, &schemeHandler, schemeParameters);
