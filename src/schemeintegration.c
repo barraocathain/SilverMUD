@@ -14,6 +14,45 @@ SCM scheme_create_skill(SCM string, SCM skilllist)
 	return SCM_BOOL_T;
 }
 
+// Change the name of an existing area in a list, given the number of the area in the list, from Scheme:
+SCM scheme_change_area_name(SCM newname, SCM areanumber, SCM arealist)
+{
+	// Check if the area exists:
+	list * areaList = scm_to_pointer(arealist);
+	size_t areaNumber = scm_to_size_t(areanumber);
+
+	if (areaList->type != AREA)
+	{
+		return SCM_BOOL_F;
+	}
+	
+	playerArea * area = getFromList(areaList, areaNumber)->area;
+
+	if (area == NULL)
+	{
+		return SCM_BOOL_F;
+	}
+
+	// Create a string from the Scheme string and copy it into the area:
+	size_t newNameLength = 0;
+	char * newName = scm_to_locale_stringn(newname, &newNameLength);
+	memset(area->areaName, 0, 32);
+	if (newNameLength > 32)
+	{
+		memcpy(area->areaName, newName, 31);
+		area->areaName[31] = '\0';
+	}
+	else
+	{
+		memcpy(area->areaName, newName, newNameLength);
+		area->areaName[31] = '\0';
+	}
+
+	free(newName);
+	
+	return SCM_BOOL_T;
+}
+
 // Change the description of an existing area in a list, given the number of the area in the list, from Scheme:
 SCM scheme_change_area_description(SCM newdescription, SCM areanumber, SCM arealist)
 {
@@ -40,10 +79,12 @@ SCM scheme_change_area_description(SCM newdescription, SCM areanumber, SCM areal
 	if (newDescriptionLength > MAX - 35)
 	{
 		memcpy(area->areaDescription, newDescription, MAX - 35);
+		area->areaDescription[MAX - 36] = '\0';
 	}
 	else
 	{
 		memcpy(area->areaDescription, newDescription, newDescriptionLength);
+		area->areaDescription[MAX - 36] = '\0';
 	}
 
 	free(newDescription);
@@ -92,6 +133,7 @@ void * schemeHandler(void * parameters)
 	// Register the various functions:
 	scm_c_define_gsubr("create-skill", 2, 0, 0, &scheme_create_skill);
 	scm_c_define_gsubr("message-everyone", 3, 0, 0, &scheme_message_everyone);
+	scm_c_define_gsubr("change-area-name", 3, 0, 0, &scheme_change_area_name);
 	scm_c_define_gsubr("change-area-description", 3, 0, 0, &scheme_change_area_description);
 	
 	// Define the various game state pointers as Scheme objects:
