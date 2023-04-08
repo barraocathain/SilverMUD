@@ -30,6 +30,7 @@ can be upper or lower-case.
 | STAT    | None                                     | Displays your current status and character sheet.       |
 | SPEC    | Core Stat Name                           | Allows you to apply spec points to a given stat.        |
 | TRY     | Core Stat Name/Skill Name, Object Number | Attempt to use the given stat or skill on the object.   |
+| TALK    | Character Name                           | Begins a conversation with another player.              |
 
 * Gamemaster's Guide
 ** Running the Server:
@@ -48,6 +49,13 @@ some rules may be made based on my own personal tastes.
 - [] :: These are brackets.
 - {} :: These are braces.
 *** Formatting:
+**** Casing:
+- Variables :: Variables should be in camelCase, with the exception being
+  variables used to store SCM values, in which case, they should in be
+  snake_case.
+
+- Types :: User defined types should be in PascalCase.
+  
 **** Control Statements:
 - A space should be between the keyword and the condition. This is to make
   control statements visually distinct from function calls.
