@@ -15,11 +15,11 @@ SCM scheme_create_skill(SCM string, SCM skilllist)
 }
 
 // Change the name of an existing area in a list, given the number of the area in the list, from Scheme:
-SCM scheme_change_area_name(SCM newname, SCM areanumber, SCM arealist)
+SCM scheme_change_area_name(SCM new_name, SCM area_number, SCM area_list)
 {
 	// Check if the area exists:
-	list * areaList = scm_to_pointer(arealist);
-	size_t areaNumber = scm_to_size_t(areanumber);
+	list * areaList = scm_to_pointer(area_list);
+	size_t areaNumber = scm_to_size_t(area_number);
 
 	if (areaList->type != AREA)
 	{
@@ -35,7 +35,7 @@ SCM scheme_change_area_name(SCM newname, SCM areanumber, SCM arealist)
 
 	// Create a string from the Scheme string and copy it into the area:
 	size_t newNameLength = 0;
-	char * newName = scm_to_locale_stringn(newname, &newNameLength);
+	char * newName = scm_to_locale_stringn(new_name, &newNameLength);
 	memset(area->areaName, 0, 32);
 	if (newNameLength > 32)
 	{
@@ -54,11 +54,11 @@ SCM scheme_change_area_name(SCM newname, SCM areanumber, SCM arealist)
 }
 
 // Change the description of an existing area in a list, given the number of the area in the list, from Scheme:
-SCM scheme_change_area_description(SCM newdescription, SCM areanumber, SCM arealist)
+SCM scheme_change_area_description(SCM new_description, SCM area_number, SCM area_list)
 {
 	// Check if the area exists:
-	list * areaList = scm_to_pointer(arealist);
-	size_t areaNumber = scm_to_size_t(areanumber);
+	list * areaList = scm_to_pointer(area_list);
+	size_t areaNumber = scm_to_size_t(area_number);
 
 	if (areaList->type != AREA)
 	{
@@ -74,7 +74,7 @@ SCM scheme_change_area_description(SCM newdescription, SCM areanumber, SCM areal
 
 	// Create a string from the Scheme string and copy it into the area:
 	size_t newDescriptionLength = 0;
-	char * newDescription = scm_to_locale_stringn(newdescription, &newDescriptionLength);
+	char * newDescription = scm_to_locale_stringn(new_description, &newDescriptionLength);
 	memset(area->areaDescription, 0, MAX - 35);
 	if (newDescriptionLength > MAX - 35)
 	{
@@ -93,7 +93,7 @@ SCM scheme_change_area_description(SCM newdescription, SCM areanumber, SCM areal
 }
 
 // Message every currently connected player from Scheme:
-SCM scheme_message_everyone(SCM sendername, SCM messagecontent, SCM outputqueue)
+SCM scheme_message_everyone(SCM sender_name, SCM message_content, SCM output_queue)
 {
 	// Allocate the memory for the needed data structures:
 	outputMessage * newOutputMessage = calloc(1, sizeof(userMessage));
@@ -105,9 +105,9 @@ SCM scheme_message_everyone(SCM sendername, SCM messagecontent, SCM outputqueue)
 	newOutputMessage->recipients = NULL;
 
 	// Convert the Scheme strings to C strings, and ensure they're NULL terminated:
-	scm_to_locale_stringbuf(sendername, newMessage->senderName, 31);
+	scm_to_locale_stringbuf(sender_name, newMessage->senderName, 31);
 	newMessage->senderName[31] = '\0';
-	scm_to_locale_stringbuf(messagecontent, newMessage->messageContent, MAX - 1);
+	scm_to_locale_stringbuf(message_content, newMessage->messageContent, MAX - 1);
 	newMessage->messageContent[MAX - 1] = '\0';
 
 	// Clean up the message contents to ensure they're safe to send and display correctly:
@@ -115,7 +115,7 @@ SCM scheme_message_everyone(SCM sendername, SCM messagecontent, SCM outputqueue)
 	userInputSanatize(newMessage->messageContent, MAX);
 
 	// Push it to the queue, where it will be handled and de-allocated:
-	pushQueue(scm_to_pointer(outputqueue), newOutputMessage, OUTPUT_MESSAGE);
+	pushQueue(scm_to_pointer(output_queue), newOutputMessage, OUTPUT_MESSAGE);
 
 	// Return a Scheme #t value:
 	return SCM_BOOL_T;
