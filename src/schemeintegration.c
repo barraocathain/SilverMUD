@@ -14,13 +14,74 @@ SCM scheme_create_skill(SCM string, SCM skilllist)
 	return SCM_BOOL_T;
 }
 
+// Create a new area and add it to the list, given a name and area description, and an area list from Scheme.
+// Returns the index of the new area:
+SCM scheme_create_area(SCM area_name, SCM area_description, SCM area_list)
+{
+	// Check if the area list exists:
+	list * areaList = scm_to_pointer(area_list);
+	if (areaList == NULL || areaList->type != AREA)
+	{
+		return SCM_BOOL_F;
+	}
+
+	// Turn the SCM values into C strings that we can use:
+	char * areaName = scm_to_locale_stringn(area_name, NULL);
+	char * areaDescription= scm_to_locale_stringn(area_description, NULL);
+
+	// Create and add the area to the area list:
+	addToList(areaList, createArea(areaName, areaDescription), AREA);
+
+	// The new index of the area will be at the end of the list. Consider returning a pointer to the area:
+	size_t areaIndex = areaList->itemCount - 1;
+
+	// Free the strings:
+	free(areaName);
+	free(areaDescription);
+
+	// Return the area index to Scheme for further lispy hacking:
+	return scm_from_size_t(areaIndex);
+}
+
+// Create a one way path between two areas from scheme:
+SCM scheme_create_path(SCM path_name, SCM from_area_index, SCM to_area_index, SCM area_list)
+{
+	// Check if the area list exists:
+	list * areaList = scm_to_pointer(area_list);
+	if (areaList == NULL || areaList->type != AREA)
+	{
+		return SCM_BOOL_F;
+	}
+
+	// Check if the areas exist:
+	playerArea * fromArea = getFromList(areaList, scm_to_size_t(from_area_index))->area;
+	playerArea * toArea = getFromList(areaList, scm_to_size_t(to_area_index))->area;
+
+	if (fromArea == NULL || toArea == NULL)
+	{
+		return SCM_BOOL_F;
+	}
+		
+	// Turn the SCM value into a C string that we can use:
+	char * pathName = scm_to_locale_stringn(path_name, NULL);
+
+	// Create the path:
+	createOneWayPath(fromArea, toArea, pathName);
+
+	// Free the string:
+	free(pathName);
+
+	// Return true to Scheme:
+	return SCM_BOOL_T;
+}
+
 // Change the name of an existing area in a list, given the number of the area in the list, from Scheme:
 SCM scheme_change_area_name(SCM new_name, SCM area_number, SCM area_list)
 {
 	// Check if the area exists:
 	list * areaList = scm_to_pointer(area_list);
 	size_t areaNumber = scm_to_size_t(area_number);
-
+	
 	if (areaList->type != AREA)
 	{
 		return SCM_BOOL_F;
@@ -131,6 +192,8 @@ void * schemeHandler(void * parameters)
    	scm_init_guile();
 
 	// Register the various functions:
+	scm_c_define_gsubr("create-area", 3, 0, 0, &scheme_create_area);
+	scm_c_define_gsubr("create-path", 4, 0, 0, &scheme_create_path);
 	scm_c_define_gsubr("create-skill", 2, 0, 0, &scheme_create_skill);
 	scm_c_define_gsubr("message-everyone", 3, 0, 0, &scheme_message_everyone);
 	scm_c_define_gsubr("change-area-name", 3, 0, 0, &scheme_change_area_name);
