@@ -54,7 +54,7 @@ SCM scheme_create_path(SCM path_name, SCM from_area_index, SCM to_area_index, SC
 	}
 
 	// Check if the areas exist:
-	playerArea * fromArea = getFromList(areaList, scm_to_size_t(from_area_index))->area;
+1	playerArea * fromArea = getFromList(areaList, scm_to_size_t(from_area_index))->area;
 	playerArea * toArea = getFromList(areaList, scm_to_size_t(to_area_index))->area;
 
 	if (fromArea == NULL || toArea == NULL)
@@ -204,6 +204,9 @@ void * schemeHandler(void * parameters)
 	scm_c_define("skill-list", scm_from_pointer(schemeThreadParameters->skillList, NULL));
 	scm_c_define("output-queue", scm_from_pointer(schemeThreadParameters->outputQueue, NULL));
 
+	// Enable readline support:
+	scm_c_eval_string("(begin (use-modules (ice-9 readline)) (activate-readline))");
+	
 	// Drop into the Scheme interpreter:
 	scm_shell(0, NULL);
 

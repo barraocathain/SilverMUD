@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <libguile.h>
 #include "queue.h"
 #include "constants.h"
 #include "gamelogic.h"
@@ -22,6 +23,7 @@ void * gameLogicHandler(void * parameters)
 	gameLogicParameters * threadParameters = parameters;
 	inputMessage * currentInput = NULL;
 	queue * commandQueue = createQueue();
+	scm_init_guile();
 	while (true)
 	{
 		// Evaluate remaining commands:
