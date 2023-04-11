@@ -1,0 +1,11 @@
+# Object files:
+*.o
+
+# Binaries:
+SilverMUDClient
+SilverMUDServer
+SilverMUDClientDebug
+SilverMUDServerDebug
+
+# Profiling Artifacts:
+gmon.out
