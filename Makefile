@@ -11,13 +11,14 @@ serversrc = $(wildcard src/*.c) src/server/SilverMUDServer.c
 serverobj = $(serversrc:.c=.o)
 
 # Default target: Compile the client and server with aggressive optimizations and a big stack of warnings:
-all: clean SilverMUDClient SilverMUDServer
 all: CFLAGS += -Wall -Wextra -Ofast
+all: SilverMUDClient SilverMUDServer
+
 
 # Debug target: Compile the client and server with profiling, debug information, debug optimization, and the
 # preprocessor flag "debug" set.
 debug: CFLAGS += -Wall -Wextra -pg -ggdb -Og -D debug
-debug: clean SilverMUDClientDebug SilverMUDServerDebug
+debug: SilverMUDClientDebug SilverMUDServerDebug
 
 SilverMUDClient: $(clientobj)
 	cc $^ $(LDFLAGS) -o $@
@@ -29,7 +30,7 @@ SilverMUDClientDebug: $(clientobj)
 	cc -pg $^ $(LDFLAGS) -o $@
 
 SilverMUDServerDebug: $(serverobj)
-	cc -pg $^ $(LDFLAGS) -o $@
+	cc -pg $^ $(LDFLAGS) -o @$
 
 # Start from a clean slate:
 .PHONY: clean

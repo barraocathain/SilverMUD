@@ -3,7 +3,6 @@
 #ifndef LINKEDLIST_H
 #define LINKEDLIST_H
 #include "areadata.h"
-#include "playerdata.h"
 
 // Let the compiler know there will be structs defined elsewhere:
 typedef struct playerPath playerPath;

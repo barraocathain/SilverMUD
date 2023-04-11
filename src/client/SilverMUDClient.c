@@ -54,10 +54,10 @@ void * messageSender(void * parameters)
 	{
 		usleep(200000);
 		// Clear the window:
-		wprintw(window, "\n\n\n");
+		waddstr(window, "\n\n\n");
 
 		// Print the prompt:
-		wprintw(window, prompt);
+		waddstr(window, prompt);
 		
 		if (wgetnstr(window, sendBuffer.messageContent, MAX) == ERR)
 		{

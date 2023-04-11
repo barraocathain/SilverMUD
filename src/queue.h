@@ -5,12 +5,12 @@
 #include "gamelogic.h"
 #include "inputoutput.h"
 
+// Forward-declare some data structures to prevent cyclic dependencies:
+typedef struct queue queue;
+
 // ========================
 // -=[ Data Structures ]=-:
 // ========================
-
-// Let the compiler know there will be structs defined elsewhere:
-typedef struct queue queue;
 
 // An enum which is used to state what type of data is being stored in a queueNode:
 typedef enum queueDataType

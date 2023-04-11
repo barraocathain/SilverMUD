@@ -3,7 +3,6 @@
 #ifndef AREADATA_H
 #define AREADATA_H
 #include "constants.h"
-#include "linkedlist.h"
 
 // ====================
 // -=[ Area/Paths: ]=-:

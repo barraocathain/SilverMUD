@@ -7,12 +7,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <gnutls/gnutls.h>
-
-#include "queue.h"
 #include "constants.h"
 #include "playerdata.h"
 
-// Let the compiler know there will be structs defined elsewhere:
+// Forward-declare some data structures to prevent cyclic dependencies:
 typedef struct queue queue;
 
 // ========================

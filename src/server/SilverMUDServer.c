@@ -64,7 +64,8 @@ int main(int argc, char ** argv)
 			}
 			case 'm':
 			{
-				strncpy(motd, optarg, strlen(optarg) + 1);
+				strncpy(motd, optarg, 2047);
+				motd[2047] = '\0';
 				break;
 			}
 		}

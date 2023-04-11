@@ -9,3 +9,7 @@ SilverMUDServerDebug
 
 # Profiling Artifacts:
 gmon.out
+
+# LSP whatnot:
+.cache
+compile_commands.json
