@@ -206,7 +206,7 @@ void * schemeHandler(void * parameters)
 
 	// Enable readline support:
 	scm_c_eval_string("(begin (use-modules (ice-9 readline)) (activate-readline))");
-	
+
 	// Drop into the Scheme interpreter:
 	scm_shell(0, NULL);
 
