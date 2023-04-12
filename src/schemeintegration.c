@@ -54,7 +54,7 @@ SCM scheme_create_path(SCM path_name, SCM from_area_index, SCM to_area_index, SC
 	}
 
 	// Check if the areas exist:
-1	playerArea * fromArea = getFromList(areaList, scm_to_size_t(from_area_index))->area;
+	playerArea * fromArea = getFromList(areaList, scm_to_size_t(from_area_index))->area;
 	playerArea * toArea = getFromList(areaList, scm_to_size_t(to_area_index))->area;
 
 	if (fromArea == NULL || toArea == NULL)
