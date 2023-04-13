@@ -30,7 +30,7 @@ SilverMUDClientDebug: $(clientobj)
 	cc -pg $^ $(LDFLAGS) -o $@
 
 SilverMUDServerDebug: $(serverobj)
-	cc -pg $^ $(LDFLAGS) -o @$
+	cc -pg $^ $(LDFLAGS) -o $@
 
 # Start from a clean slate:
 .PHONY: clean
