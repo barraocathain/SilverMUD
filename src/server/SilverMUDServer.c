@@ -281,7 +281,6 @@ int main(int argc, char ** argv)
 			// See if we can put in the client:
 			for (int index = 0; index < PLAYERCOUNT; index++)  
 			{
-				printf("Checking for slot: %d\n", index);
 				// When there is an empty slot, pop it in:
 				if (clientSockets[index] == 0)  
 				{
