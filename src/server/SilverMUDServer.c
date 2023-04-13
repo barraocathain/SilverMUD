@@ -40,7 +40,7 @@ int main(int argc, char ** argv)
 	time_t currentTime;
 	unsigned delay = 800;
 	int socketFileDesc, connectionFileDesc, length, clientsAmount,
-		socketCheck, activityCheck, returnVal;
+		socketCheck, activityCheck;
 	fd_set connectedClients;
 	pthread_t gameLogicThread, outputThread, schemeThread;
 	int clientSockets[PLAYERCOUNT];
@@ -280,36 +280,46 @@ int main(int argc, char ** argv)
 			} 
 			// See if we can put in the client:
 			for (int index = 0; index < PLAYERCOUNT; index++)  
-			{  
+			{
+				printf("Checking for slot: %d\n", index);
 				// When there is an empty slot, pop it in:
 				if (clientSockets[index] == 0)  
-				{  
-					clientSockets[index] = connectionFileDesc;  
-					//printf("Adding to list of sockets as %d.\n", index);
+				{
+					volatile int handshakeReturnValue = 0;
+					clientSockets[index] = connectionFileDesc;				   
 					gnutls_transport_set_int(tlssessions[index], clientSockets[index]);
 					do 
 					{
-						returnVal = gnutls_handshake(tlssessions[index]);
+						handshakeReturnValue = gnutls_handshake(tlssessions[index]);
+					} while (handshakeReturnValue < 0 && gnutls_error_is_fatal(handshakeReturnValue) == 0);
+
+					// If it's good, send them the welcome message:
+					if(handshakeReturnValue == 0)
+					{
+						// Send a greeting message:
+						memcpy(sendBuffer.senderName, "\0 Login > \0", 11);
+						strcpy(sendBuffer.messageContent, "Welcome to the server!");
+						messageSend(tlssessions[index], &sendBuffer);
+						strcpy(receiveBuffer.messageContent, "/look");
+
+						// Allocate the memory for a new input message:
+						inputMessage * newMessage = malloc(sizeof(inputMessage));
+						newMessage->content = malloc(sizeof(userMessage));
+
+						// Copy in the correct data:
+						memcpy(newMessage->content, &receiveBuffer, sizeof(userMessage));
+						newMessage->sender = &connectedPlayers[index];
+
+						// Push the new message onto the queue:
+						pushQueue(inputQueue, newMessage, INPUT_MESSAGE);
+						break;
 					}
-					while (returnVal < 0 && gnutls_error_is_fatal(returnVal) == 0);
-					
-					// Send a greeting message:
-					memcpy(sendBuffer.senderName, "\0 Login > \0", 11);
-					strcpy(sendBuffer.messageContent, "Welcome to the server!");
-					messageSend(tlssessions[index], &sendBuffer);
-					strcpy(receiveBuffer.messageContent, "/look");
 
-					// Allocate the memory for a new input message:
-					inputMessage * newMessage = malloc(sizeof(inputMessage));
-					newMessage->content = malloc(sizeof(userMessage));
-
-					// Copy in the correct data:
-					memcpy(newMessage->content, &receiveBuffer, sizeof(userMessage));
-					newMessage->sender = &connectedPlayers[index];
-
-					// Push the new message onto the queue:
-					pushQueue(inputQueue, newMessage, INPUT_MESSAGE);
-					break;  
+					// If it's not good, close it, we don't want it:
+					shutdown(clientSockets[index], 2);
+					close(clientSockets[index]);
+					clientSockets[index] = 0;
+					break;
 				}  
 			}  
 		}
