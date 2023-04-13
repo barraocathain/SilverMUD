@@ -2,3 +2,6 @@
 							 (begin
 							   (create-path from-path-description from-area to-area arealist)
 							   (create-path to-path-description to-area from-area arealist)))
+
+(define (shout message outputqueue)
+  (message-everyone "SERVER" message outputqueue))
