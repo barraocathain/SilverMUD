@@ -206,9 +206,9 @@ void * schemeHandler(void * parameters)
 
 	// Enable readline support:
 	scm_c_eval_string("(begin (use-modules (ice-9 readline)) (activate-readline))");
-
+	scm_c_eval_string("(begin (use-modules (system repl server)) (if (file-exists? \"silvermud-repl\") (delete-file \"silvermud-repl\"))(run-server (make-unix-domain-server-socket #:path \"silvermud-repl\")))");
 	// Drop into the Scheme interpreter:
-	scm_shell(0, NULL);
+//	scm_shell(0, NULL);
 
 	// Return NULL. This should be unreachable.
 	return NULL;
