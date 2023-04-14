@@ -31,6 +31,7 @@ can be upper or lower-case.
 | SPEC    | Core Stat Name                           | Allows you to apply spec points to a given stat.        |
 | TRY     | Core Stat Name/Skill Name, Object Number | Attempt to use the given stat or skill on the object.   |
 | TALK    | Character Name                           | Begins a conversation with another player.              |
+| SHOUT   | None                                     | Messages the current area, ignoring any conversations.  |
 
 * Gamemaster's Guide
 ** Running the Server:
