@@ -8,10 +8,18 @@ easy-to-understand structures.
 * Player's Guide
 ** Running The Client
 *** How To Connect To A Server:
+#+begin_example
+SilverMUDClient -i <ip-address-of-game-server>
+#+end_example
 To connect to a server, use the command-line option =-i=, and the IP address of
-the server. If the server admin is hosting the server on a port other than the
-default port of 5000, you can use the =-p= option with the number of the port. If
-the connection is successful, you will be placed in the server's login
+the server
+#+begin_example
+SilverMUDClient -i <ip-address-of-game-server> -p <port-of-game-server>
+#+end_example
+If the server admin is hosting the server on a port other than the
+default port of 5000, you can use the =-p= option with the number of the port.
+
+If the connection is successful, you will be placed in the server's login
 area. Type =/join <player name>=, where player name is a name of your choosing,
 and you will be placed in the spawn area, ready to play.
 
@@ -47,9 +55,11 @@ SilverMUD has the following dependencies:
 These rules attempt to make the program as visually clear as possible, while
 some rules may be made based on my own personal tastes.
 
+For the purposes of this guide, we will use this terminology:
 - () :: These are parentheses.
 - [] :: These are brackets.
 - {} :: These are braces.
+  
 *** Formatting:
 **** Casing:
 - Variables :: Variables should be in camelCase, with the exception being
