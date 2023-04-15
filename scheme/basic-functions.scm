@@ -5,4 +5,5 @@
 
 ;; Send a quick message to everyone in the game as the server:
 (define (shout message)
+  "Send a quick message to everyone in the game as the server."
   (message-everyone "SERVER" message output-queue))
