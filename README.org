@@ -1,0 +1,9 @@
+#+TITLE: SilverMUD: The Hackable Terminal-Top Roleplaying Game!
+#+AUTHOR: Barra Ó Catháin
+* SilverMUD: The Hackable Terminal-Top Roleplaying Game!
+SilverMUD is a setting-agnostic multiplayer roleplaying game which is played
+over the internet. It gives a gamemaster the same flexibility they have to
+improvise and create content as they would have at a table-top, by allowing
+game content to be programmed and altered on-the-fly, using an integrated Scheme
+interpreter. It can be played as a multi-user dungeon, or a "terminal-top"
+roleplaying game, depending on how you decide to configure it.
