@@ -1,0 +1,53 @@
+#+TITLE: SilverMUD Design Document
+* What Is The Main Goal Of SilverMUD?
+The main goal of SilverMUD is to create a text-based role playing game system
+that is setting-agnostic, where a game master can create new content through
+interacting with a Scheme REPL. SilverMUD will tend to favor simple abstractions
+for game concepts, in order to accomplish being more setting-agnostic and easy
+to play over the internet.
+
+* Concepts:
+** Worlds
+Worlds are a collection of regions and dungeons, tied to a [[*Settings][setting]]. 
+
+*** Regions
+Regions are a collection of areas bundled together. This lets them be unloaded
+and loaded as a group, as well as providing a mechanism for dividing your areas
+based on locales or otherwise.
+
+**** Areas
+Areas are actual locations a player can be in. They have a description, name,
+and can hold [[*Players][players]] and [[*Objects][objects]].
+
+***** Exits
+Exits are connections to other [[*Areas][areas]] or [[*Rooms][rooms]], which could be in another [[*Region][region]]
+or [[*Dungeons][dungeon]]. They may have a "challenge" to pass, in order to use them, or a
+requirement to access them in the first place.
+
+*** Dungeons
+Dungeons are similar to a region, but differ in one crucial way; they are
+instanced, allowing for a single player or party (or potentially multiple) to
+enter a copy of the dungeon, allowing for setups similar to a MUD or MMO, or
+easily reusable encounters. 
+
+**** Rooms
+Rooms are the dungeon equivalent to areas. They are separated purely to
+strengthen the distinction between dungeons and regions; this may change to add
+additional functionality 
+
+***** Exits
+Exits are connections to other [[*Areas][areas]] or [[*Rooms][rooms]], which could be in another [[*Region][region]]
+or [[*Dungeons][dungeon]]. They may have a "challenge" to pass, in order to use them, or a
+requirement to access them in the first place. The exit leading to or from a
+[[*Dungeon][dungeon]] may create and destroy the instance of the dungeon.
+
+** Objects
+** Events
+** Players
+** Abilities
+** Settings
+Settings are a combination of definitions of items, custom rules, and other
+miscellaneous things like common description strings and enemy types. It's
+somewhat analogous to a sourcebook or rulebook for a traditional table-top RPG,
+allowing the game to take on different forms and settings depending on which
+ones are being used. These are loaded as Scheme files in a [[*Worlds][world.]]
