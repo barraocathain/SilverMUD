@@ -42,9 +42,39 @@ requirement to access them in the first place. The exit leading to or from a
 [[*Dungeon][dungeon]] may create and destroy the instance of the dungeon.
 
 ** Objects
+Objects are a representation of items that can be in areas, rooms, or player's
+inventories. They have a name, description, and uses. Looking at an object
+displays the name, description, and uses.  
+
+*** Uses
+Uses are Scheme functions pushed onto the event queue when a player activates
+them through the use command.
+
+Uses may additionally have a usage requirement, and a visibility requirement.
+
+A usage requirement is a Scheme function that is passed a reference to the
+player attempting to activate the use. It returns #t or #f, corresponding to the
+activation being successful or a failure.
+
+A visibility requirement is a Scheme function that is passed a reference to the 
+player viewing the object. It returns #t or #f, corresponding to the use being
+displayed to the player or hidden.
+
+*** Properties
+Objects may have additional properties that dictate how they can be interacted
+with. Currently planned properties are:
+
+- player-pick-up :: Defines whether a object can be moved to a player's inventory
+  from an area or room.
+- player-put-down :: Defines whether a object can be moved from a player's inventory
+  to an area or room.
+  
 ** Events
+
 ** Players
+
 ** Abilities
+
 ** Settings
 Settings are a combination of definitions of items, custom rules, and other
 miscellaneous things like common description strings and enemy types. It's
