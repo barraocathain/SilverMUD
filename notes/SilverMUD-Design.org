@@ -74,6 +74,27 @@ with. Currently planned properties are:
 ** Players
 
 ** Abilities
+Abilities are similar to [[*Uses][uses]], with the distinction of being tied to [[*Players][players]] and
+not [[*Objects][objects]]. They have a name, description, usage cost, skill point cost, and
+effect, and a usage requirement.
+
+*** Usage Cost
+The usage cost of an ability refers to the amount of ability energy it costs a
+player to attempt to activate it using the /activate command.
+
+*** Skill Point Cost
+The amount of skill points it costs to "purchase" the skill, and add it to the
+player's character.
+
+*** Effect
+Effects are Scheme functions pushed onto the event queue when a player activates
+them through the /activate command.
+
+*** Usage Requirement
+Abilities may optionally have a usage requirement. A usage requirement is a
+Scheme function that is passed a reference to the player attempting to activate
+the ability. It returns #t or #f, corresponding to the activation being
+successful or a failure. 
 
 ** Settings
 Settings are a combination of definitions of items, custom rules, and other
