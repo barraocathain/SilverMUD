@@ -70,8 +70,19 @@ with. Currently planned properties are:
   to an area or room.
   
 ** Events
+SilverMUD centers around a central events queue; a queue of Scheme programs,
+which are spawned in response to most things which happen in the game and mutate
+the global state. Events are constantly evaluated by a thread which has access
+to the relevant data structures.
+
+Player commands are parsed from the command format into events by the input
+thread. 
 
 ** Players
+Players will be designed more fully as gameplay aspects are implemented. They
+currently are planned to have core statistics, skills (setting-specific
+statistics), abilities, health points, ability points, and character points,
+which are used to purchase core statistic points, skill points, and abilities.
 
 ** Abilities
 Abilities are similar to [[*Uses][uses]], with the distinction of being tied to [[*Players][players]] and
@@ -82,9 +93,9 @@ effect, and a usage requirement.
 The usage cost of an ability refers to the amount of ability energy it costs a
 player to attempt to activate it using the /activate command.
 
-*** Skill Point Cost
-The amount of skill points it costs to "purchase" the skill, and add it to the
-player's character.
+*** Character Point Cost
+The amount of character points it costs to "purchase" the skill, and add it to
+the player's character.
 
 *** Effect
 Effects are Scheme functions pushed onto the event queue when a player activates
