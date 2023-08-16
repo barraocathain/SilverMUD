@@ -2,8 +2,9 @@
 This document contains information about various implementation details of
 SilverMUD, as a scratchpad for decisions before implementation.
 
-* Server->Client Message Format (1409 bytes total):
-** Message Type - Unsigned 8 Bit Integer:
+* Structures:
+** Server->Client Message Format (1409 bytes total):
+*** Message Type - Unsigned 8 Bit Integer:
 |-------+------------------------|
 | Value | Purpose                |
 |-------+------------------------|
@@ -17,9 +18,9 @@ SilverMUD, as a scratchpad for decisions before implementation.
 
 Further values remain open for possible additional message types.
 
-** Sender Name - 128 Character String.
+*** Sender Name - 128 Character String.
 
-** Message Content - 1024 Character String.
+*** Message Content - 1024 Character String.
 
-* Client->Server Message Format (1024 bytes total):
-** Message Content - 1024 Character String.
+** Client->Server Message Format (1024 bytes total):
+*** Message Content - 1024 Character String.
