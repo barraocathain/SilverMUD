@@ -19,6 +19,7 @@ SilverMUD, as a scratchpad for decisions before implementation.
 Further values remain open for possible additional message types.
 
 *** Sender Name - 128 Character String.
+This field may be repurposed for message types without a need for a name.
 
 *** Message Content - 1024 Character String.
 
