@@ -7,23 +7,15 @@
 
 #include "scheme-integration.h"
 
-// The function ran by the Scheme thread which initializes the REPL:
-void * schemeThreadHandler (void * threadParameters)
+// The function ran by the Scheme thread which runs a text-based REPL:
+void * schemeREPLHandler (void * threadParameters)
 {
-	// Unpack the parameters given to the thread:
-	struct SchemeThreadArguments * arguments = threadParameters;
-	
-	// Initialize GNU Guile:
+	// Initialize Scheme:
 	scm_init_guile();
 
 	// Enable Readline support:
 	scm_c_eval_string("(begin (use-modules (ice-9 readline)) (activate-readline))");
 
-	// Start the REPL server on a UNIX socket:
-	scm_c_eval_string("(begin (use-modules (system repl server))"
-					  "(if (file-exists? \"silvermud-repl\") (delete-file \"silvermud-repl\"))"
-					  "(spawn-server (make-unix-domain-server-socket #:path \"silvermud-repl\")))");
-	
 	// Start a Scheme REPL:
 	scm_shell(0, NULL);
 	

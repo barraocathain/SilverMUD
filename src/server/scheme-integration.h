@@ -6,14 +6,14 @@
 #ifndef SCHEME_INTEGRATION_H
 #define SCHEME_INTEGRATION_H
 
-struct SchemeThreadArguments
-{
-	
-};
-
+struct SchemeThreadArguments                                        
+{                                                                   
+                                                                    
+};                                                                  
+                                                                    
 // The function ran by the Scheme thread which initializes the REPL:
-void * schemeThreadHandler (void * threadParameters);
-
+void * schemeREPLHandler (void * threadParameters);               
+                                                                    
 #endif
 // ==========================================================
 // | End of scheme-integration.h, copyright notice follows. |
