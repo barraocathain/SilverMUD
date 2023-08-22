@@ -3,6 +3,7 @@
 // | Copyright (C) 2023, Barra Ó Catháin   |
 // | See end of file for copyright notice. |
 // =========================================
+#include <errno.h>
 #include <stdio.h>
 #include <netdb.h>
 #include <stdlib.h>
@@ -16,7 +17,9 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <gnutls/gnutls.h>
 
+#include "connections.h"
 #include "scheme-integration.h"
 
 static const int PORT = 5000;
@@ -45,8 +48,8 @@ int main (int argc, char ** argv)
 	}
 
 	// Allow reusing the address so that quick re-launching doesn't fail:
-	//setsockopt(masterSocket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
-	//setsockopt(masterSocket, SOL_SOCKET, SO_REUSEPORT, &(int){1}, sizeof(int));
+	setsockopt(masterSocket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+	setsockopt(masterSocket, SOL_SOCKET, SO_REUSEPORT, &(int){1}, sizeof(int));
 	
 	// Setup the server address struct to bind the master socket to:
 	struct sockaddr_in serverAddress;
@@ -86,32 +89,116 @@ int main (int argc, char ** argv)
 	int eventsCount = 0;
 	struct epoll_event events[1024];
 
+	// Setup the needed anonymous certificate for TLS:
+	gnutls_global_init();
+	gnutls_anon_server_credentials_t serverKey;
+	gnutls_anon_allocate_server_credentials(&serverKey);
+	gnutls_anon_set_server_known_dh_params(serverKey, GNUTLS_SEC_PARAM_MEDIUM);
+	
+	// Create a client connection list to allow us to associate TLS sessions and sockets and players:
+	struct ClientConnectionList clientConnections;
+	
 	// Start a REPL thread:
-	pthread_t schemeREPLThread;
-	pthread_create(&schemeREPLThread, NULL, schemeREPLHandler, NULL);
+	//pthread_t schemeREPLThread;
+	//pthread_create(&schemeREPLThread, NULL, schemeREPLHandler, NULL);
 
 	while (true)
 	{
-		eventsCount = epoll_wait(connectedClients, events, 1024, -1);
-		if (eventsCount == -1)
+		do
 		{
+			eventsCount = epoll_wait(connectedClients, events, 1024, -1);
+		} while (eventsCount < 0 && errno == EINTR);
+		
+		if (eventsCount == -1)
+		{ 
 			fprintf(stderr, "epoll_wait() failed. Aborting.\n");
 			exit(EXIT_FAILURE);
 		}
+		
 		for (int index = 0; index < eventsCount; index++)
-		{
+		{			
 			// If it's the master socket, it's a new client connecting:
 			if (events[index].data.fd == masterSocket)
 			{
+				// Setup a TLS Session:
+				gnutls_session_t * tlsSession = calloc(1, sizeof(gnutls_session_t));				
+				gnutls_init(tlsSession, GNUTLS_SERVER);
+				gnutls_priority_set_direct(*tlsSession, "NORMAL:+ANON-ECDH:+ANON-DH", NULL);
+				gnutls_credentials_set(*tlsSession, GNUTLS_CRD_ANON, serverKey);
+				gnutls_handshake_set_timeout(*tlsSession, GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
+
+				// Accept the connection:
 				int newSocket = accept(masterSocket, NULL, NULL);
-				send(newSocket, "Hello, world!", 13, 0);
-				close(newSocket);
+				gnutls_transport_set_int(*tlsSession, newSocket);
+				
+				// Perform a TLS handshake:
+				volatile int handshakeReturnValue = 0;
+				do 
+				{
+					handshakeReturnValue = gnutls_handshake(*tlsSession);
+				} while (handshakeReturnValue < 0 && gnutls_error_is_fatal(handshakeReturnValue) == 0);
+
+				if (handshakeReturnValue < 0)
+				{
+					printf("%d", handshakeReturnValue);
+					fflush(stdout);
+					gnutls_bye(*tlsSession, 2);
+					shutdown(newSocket, 2);
+					close(newSocket);
+					break;
+				}			   
+								
+				watchedEvents.events = EPOLLIN;
+				watchedEvents.data.fd = newSocket;
+				
+				// Add the completed file descriptor to the set:
+				epoll_ctl(connectedClients, EPOLL_CTL_ADD, newSocket, &watchedEvents);
+
+				// Add the connection to the list:
+				addNewConnection(&clientConnections, newSocket, tlsSession);
+				
+				// Print a message:
+				printf("New connection established! %d clients, session ID %d.\n", clientConnections.clientCount, tlsSession);
+				
+			}
+			else
+			{
+				// Find the corresponding TLS session:
+				struct ClientConnection * connection = findConnectionByFileDescriptor(&clientConnections, events[index].data.fd);
+				if (connection != NULL)
+				{
+					char buffer[2048];
+					int returnValue = gnutls_record_recv(*connection->tlsSession, &buffer, 2048);
+					if (returnValue == 0 || returnValue == -10)
+					{
+						printf("Closing session ID: %d\n", *connection->tlsSession);
+						epoll_ctl(connectedClients, EPOLL_CTL_DEL, connection->fileDescriptor, &watchedEvents);
+						gnutls_bye(*connection->tlsSession, 2);
+						shutdown(connection->fileDescriptor, 2);
+						close(connection->fileDescriptor);
+						removeConnectionByFileDescriptor(&clientConnections, connection->fileDescriptor);
+					}
+					else if (returnValue == 2048)
+					{
+						printf("%s\n", buffer);
+						fflush(stdout);
+					}
+				}
+				else
+				{
+					printf("Didn't find associated TLS Session!\n");
+					fflush(stdout);
+					// Remove the file descriptor from our watched set and close it:
+					epoll_ctl(connectedClients, EPOLL_CTL_DEL, events[index].data.fd, &watchedEvents);
+					close(events[index].data.fd);
+					removeConnectionByFileDescriptor(&clientConnections, events[index].data.fd);
+				}
 			}
 		}
 	}
 	
 	// Wait for all other threads to terminate:
-    pthread_join(schemeREPLThread, NULL);
+    //pthread_join(schemeREPLThread, NULL);
 	
 	// Return a successful status code to the operating system:
 	return 0;

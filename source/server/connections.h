@@ -6,17 +6,20 @@
 #ifndef CONNECTIONS_H
 #define CONNECTIONS_H
 #include <stddef.h>
+#include <gnutls/gnutls.h>
 
 struct ClientConnection
 {
 	// TODO: Pointer to player struct.
-	int fileDescriptor;
+	gnutls_session_t * tlsSession;
+	int fileDescriptor;	
 };
 
 struct ClientConnectionNode
 {
 	struct ClientConnection * connection;
 	struct ClientConnectionNode * next;
+	struct ClientConnectionNode * previous;
 };
 
 struct ClientConnectionList
@@ -26,6 +29,13 @@ struct ClientConnectionList
 	struct ClientConnectionNode * tail;
 };
 
+
+//struct ClientConnection * findConnectionByPlayer(struct ClientConnectionList * list);
+struct ClientConnection * findConnectionByFileDescriptor(struct ClientConnectionList * list, int fileDescriptor);
+struct ClientConnection * findConnectionByTlsSession(struct ClientConnectionList * list, gnutls_session_t * tlsSession);
+
+int removeConnectionByFileDescriptor(struct ClientConnectionList * list, int fileDescriptor);
+int addNewConnection(struct ClientConnectionList * list, int fileDescriptor, gnutls_session_t * tlsSession);
 
 #endif
 // ===================================================
