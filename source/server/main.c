@@ -81,6 +81,8 @@ int main (int argc, char ** argv)
 		fprintf(stderr, "Failed to create epoll instance. Aborting.\n");
 		exit(EXIT_FAILURE);
 	}
+
+	// Setup the epoll events we want to watch for:
 	struct epoll_event watchedEvents;
 	watchedEvents.events = EPOLLIN;
 	watchedEvents.data.fd = masterSocket;
@@ -132,12 +134,14 @@ int main (int argc, char ** argv)
 				gnutls_transport_set_int(*tlsSession, newSocket);
 				
 				// Perform a TLS handshake:
-				volatile int handshakeReturnValue = 0;
+				int handshakeReturnValue = 0;
 				do 
 				{
 					handshakeReturnValue = gnutls_handshake(*tlsSession);
 				} while (handshakeReturnValue < 0 && gnutls_error_is_fatal(handshakeReturnValue) == 0);
 
+
+				// If the handshake was unsuccessful, close the connection:
 				if (handshakeReturnValue < 0)
 				{
 					printf("%d", handshakeReturnValue);
@@ -147,11 +151,10 @@ int main (int argc, char ** argv)
 					close(newSocket);
 					break;
 				}			   
-								
+
+				// Setup the epoll events we want to watch for:				
 				watchedEvents.events = EPOLLIN;
-				watchedEvents.data.fd = newSocket;
-				
-				// Add the completed file descriptor to the set:
+				watchedEvents.data.fd = newSocket;			   
 				epoll_ctl(connectedClients, EPOLL_CTL_ADD, newSocket, &watchedEvents);
 
 				// Add the connection to the list:
