@@ -105,6 +105,7 @@ m4/lt~obsolete.m4
 Makefile
 
 SilverMUDServer
+SilverMUDClient
 config.h
 config.h.in
 stamp-h1

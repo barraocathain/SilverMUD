@@ -162,7 +162,6 @@ int main (int argc, char ** argv)
 				
 				// Print a message:
 				printf("New connection established! %d clients, session ID %d.\n", clientConnections.clientCount, tlsSession);
-				
 			}
 			else
 			{
@@ -183,7 +182,7 @@ int main (int argc, char ** argv)
 					}
 					else if (returnValue == 2048)
 					{
-						printf("%s\n", buffer);
+						printf("%s", buffer);
 						fflush(stdout);
 					}
 				}
