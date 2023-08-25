@@ -6,9 +6,8 @@
 #ifndef MESSAGES_H
 #define MESSAGES_H
 #include <libguile.h> 
-
-const size_t MESSAGE_NAME_LENGTH = 128;
-const size_t MESSAGE_CONTENT_LENGTH = 1024;
+#define MESSAGE_NAME_LENGTH 128
+#define MESSAGE_CONTENT_LENGTH 1024
 
 enum MessageTypes
 {
@@ -22,7 +21,7 @@ enum MessageTypes
 
 struct ClientToServerMessage
 {
-	char content[MESSAGE_CONTENT_LENGTH]
+	char content[MESSAGE_CONTENT_LENGTH];
 };
 
 struct ServerToClientMessage

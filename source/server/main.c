@@ -20,6 +20,7 @@
 #include <gnutls/gnutls.h>
 
 #include "connections.h"
+#include "../messages.h"
 #include "scheme-integration.h"
 
 static const int PORT = 5000;
@@ -161,7 +162,7 @@ int main (int argc, char ** argv)
 				addNewConnection(&clientConnections, newSocket, tlsSession);
 				
 				// Print a message:
-				printf("New connection established! %d clients, session ID %d.\n", clientConnections.clientCount, tlsSession);
+				printf("New connection established! %d clients, session ID %u.\n", clientConnections.clientCount, tlsSession);
 			}
 			else
 			{
@@ -169,8 +170,8 @@ int main (int argc, char ** argv)
 				struct ClientConnection * connection = findConnectionByFileDescriptor(&clientConnections, events[index].data.fd);
 				if (connection != NULL)
 				{
-					char buffer[2048];
-					int returnValue = gnutls_record_recv(*connection->tlsSession, &buffer, 2048);
+					struct ClientToServerMessage message;
+					int returnValue = gnutls_record_recv(*connection->tlsSession, &message, sizeof(struct ClientToServerMessage));
 					if (returnValue == 0 || returnValue == -10)
 					{
 						printf("Closing session ID: %d\n", *connection->tlsSession);
@@ -180,9 +181,9 @@ int main (int argc, char ** argv)
 						close(connection->fileDescriptor);
 						removeConnectionByFileDescriptor(&clientConnections, connection->fileDescriptor);
 					}
-					else if (returnValue == 2048)
+					else if (returnValue == sizeof(struct ClientToServerMessage))
 					{
-						printf("%s", buffer);
+						printf("%s", message.content);
 						fflush(stdout);
 					}
 				}

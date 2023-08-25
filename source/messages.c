@@ -39,7 +39,7 @@ SCM scheme_createClientToServerMessage(SCM content)
 		free(contentString);
 
 		// Return the pointer as a Scheme object:
-		return scm_from_pointer(message);
+		return scm_from_pointer(message, NULL);
 	}
 	else
 	{
@@ -87,7 +87,7 @@ SCM scheme_createServerToClientMessage(SCM type, SCM name, SCM content)
 		free(contentString);
 
 		// Return the pointer as a Scheme object:
-		return scm_from_pointer(message);
+		return scm_from_pointer(message, NULL);
 	}
 	else
 	{

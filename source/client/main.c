@@ -13,6 +13,8 @@
 #include <sys/socket.h>
 #include <gnutls/gnutls.h>
 
+#include "../messages.h"
+
 int main (int argc, char ** argv)
 {	
 	// Print a welcome message:
@@ -64,11 +66,11 @@ int main (int argc, char ** argv)
 	while (returnValue < 0 && gnutls_error_is_fatal(returnValue) == 0);
 
 
-	char buffer[2048];
+	struct ClientToServerMessage message;
 	while (true)
 	{
-		fgets(buffer, 2048, stdin);
-		gnutls_record_send(tlsSession, &buffer, 2048);
+		fgets(message.content, 1024, stdin);
+		gnutls_record_send(tlsSession, &message, 1024);
 	}
 	
 	// Return a successful status code to the operating system:
