@@ -162,7 +162,8 @@ int main (int argc, char ** argv)
 				addNewConnection(&clientConnections, newSocket, tlsSession);
 				
 				// Print a message:
-				printf("New connection established! %d clients, session ID %u.\n", clientConnections.clientCount, tlsSession);
+				printf("New connection established. %d client(s), session ID %u.\n",
+					   clientConnections.clientCount, tlsSession);
 			}
 			else
 			{
@@ -174,7 +175,7 @@ int main (int argc, char ** argv)
 					int returnValue = gnutls_record_recv(*connection->tlsSession, &message, sizeof(struct ClientToServerMessage));
 					if (returnValue == 0 || returnValue == -10)
 					{
-						printf("Closing session ID: %d\n", *connection->tlsSession);
+						printf("Closing session ID: %u.\n", *connection->tlsSession);
 						epoll_ctl(connectedClients, EPOLL_CTL_DEL, connection->fileDescriptor, &watchedEvents);
 						gnutls_bye(*connection->tlsSession, 2);
 						shutdown(connection->fileDescriptor, 2);
@@ -183,7 +184,7 @@ int main (int argc, char ** argv)
 					}
 					else if (returnValue == sizeof(struct ClientToServerMessage))
 					{
-						printf("%s", message.content);
+						printf("%s\n", message.content);
 						fflush(stdout);
 					}
 				}
