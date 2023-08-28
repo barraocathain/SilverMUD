@@ -117,8 +117,8 @@ int main (int argc, char ** argv)
 		// Move the windows into place:
 		mvwin(gameWindow, 1, 1);
 		mvwin(chatWindow, (height / 2) + 1 , 1);
-		wresize(gameWindow, (height / 2) - 1, width - 2);
-		wresize(chatWindow, ((height / 2) - 2) - (1 - (height % 2)), width - 2);
+		wresize(gameWindow, (height - 2) / 2, width - 2);
+		wresize(chatWindow, ((height - 3) / 2) - (1 - (height % 2)), width - 2);
 
 		wrefresh(gameWindow);
 		wrefresh(chatWindow);		
@@ -133,8 +133,8 @@ int main (int argc, char ** argv)
 		
 		if (message.content[0] != '\0')
 		{
-			wprintw(gameWindow, "%s\n", message.content);
-			wprintw(chatWindow, "%s\n", message.content);
+			wprintw(gameWindow, "\n%s", message.content);
+			wprintw(chatWindow, "\n%s", message.content);
 			gnutls_record_send(tlsSession, &message, 1024);			
 		}
 	}
