@@ -11,4 +11,6 @@ SilverMUDServer_SOURCES = \
 
 SilverMUDClient_SOURCES = \
 	source/messages.c \
+	source/client/client-drawing.c \
+	source/client/receiving-thread.c \
 	source/client/main.c

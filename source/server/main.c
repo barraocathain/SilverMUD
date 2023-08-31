@@ -184,8 +184,22 @@ int main (int argc, char ** argv)
 					}
 					else if (returnValue == sizeof(struct ClientToServerMessage))
 					{
-						printf("%s\n", message.content);
-						fflush(stdout);
+						struct ServerToClientMessage outputMessage;
+
+						// Copy the message to the output format:
+						outputMessage.type = LOCAL_CHAT;
+						sprintf(outputMessage.name, "UNNAMED");
+						strncpy(outputMessage.content, message.content, MESSAGE_CONTENT_LENGTH);
+
+						struct ClientConnectionNode * currentClient = clientConnections.head;
+						while (currentClient != NULL)
+						{
+							gnutls_record_send(*currentClient->connection->tlsSession, &outputMessage,
+											   sizeof(struct ServerToClientMessage));
+							currentClient = currentClient->next;
+						}
+						// printf("%s\n", message.content);
+						// fflush(stdout);
 					}
 				}
 				else

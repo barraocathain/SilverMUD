@@ -15,6 +15,8 @@
 
 #include "../config.h"
 #include "../messages.h"
+#include "client-drawing.h"
+#include "receiving-thread.h"
 
 int main (int argc, char ** argv)
 {	
@@ -79,62 +81,44 @@ int main (int argc, char ** argv)
 	// Enable colours:
 	start_color();
 	use_default_colors();
-	init_pair(1, COLOR_GREEN, -1);
-
+	init_pair(1, COLOR_GREEN,     -1);
+	init_pair(2, COLOR_YELLOW,    -1);
+	init_pair(3, COLOR_RED,       -1);
+	init_pair(4, COLOR_BLUE,      -1);
+	init_pair(5, COLOR_CYAN,      -1);
+	init_pair(6, COLOR_MAGENTA,   -1);
+	
 	// Variables needed for the main loop:
 	int height, width;
 	getmaxyx(stdscr, height, width);
 	struct ClientToServerMessage message;
 	
-	WINDOW * chatWindow, * gameWindow;	
+	WINDOW * chatWindow, * gameWindow, * inputWindow;
+	inputWindow = newwin(1, width - 2, height - 1, 1);
 	gameWindow = newwin((height / 2) - 1, width - 2, 1, 1);
 	chatWindow = newwin((height / 2) - 3, width - 2, (height / 2) + 1, 1);
 
 	scrollok(gameWindow, TRUE);
 	scrollok(chatWindow, TRUE);
+	scrollok(inputWindow, TRUE);
+	
+	redrawClientLayout(gameWindow, chatWindow, inputWindow);
+	
+	struct ReceivingThreadArguments receivingThreadArguments;
+	receivingThreadArguments.chatWindow = chatWindow;
+	receivingThreadArguments.gameWindow = gameWindow;
+	receivingThreadArguments.inputWindow = inputWindow;
+	receivingThreadArguments.session = tlsSession;
+
+	pthread_t receivingThread;
+	pthread_create(&receivingThread, NULL, receivingThreadHandler, &receivingThreadArguments);
 	
 	while (true)
-	{		
-		// Store the current size of the terminal:
-		getmaxyx(stdscr, height, width);		
+	{				
+		wgetnstr(inputWindow, message.content, 1024);
 
-		
-		// Draw the lines that will seperate windows:
-		wborder(stdscr, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
-		mvwhline(stdscr, 0, 0, '=', width);
-		mvwhline(stdscr, height / 2, 0, '=', width);
-		mvwhline(stdscr, height - 2, 0, '=', width);
-
-		// Write the labels for windows:
-		attron(COLOR_PAIR(1));
-		mvwprintw(stdscr, 0, 1, " SilverMUD | Version %s ", PACKAGE_VERSION);
-		mvwprintw(stdscr, height / 2, 1, " Chat ");
-		mvwprintw(stdscr, height - 2, 1, " Input ");
-		attroff(COLOR_PAIR(1));
-
-		wrefresh(stdscr);
-		
-		// Move the windows into place:
-		mvwin(gameWindow, 1, 1);
-		mvwin(chatWindow, (height / 2) + 1 , 1);
-		wresize(gameWindow, (height - 2) / 2, width - 2);
-		wresize(chatWindow, ((height - 3) / 2) - (1 - (height % 2)), width - 2);
-
-		wrefresh(gameWindow);
-		wrefresh(chatWindow);		
-		
-		// Move to the input area:
-		wmove(stdscr, height - 1, 1);
-		wgetnstr(stdscr, message.content, 1024);
-
-		// Clear the input area:
-		wmove(stdscr, height - 2, 1);
-		clrtoeol();
-		
 		if (message.content[0] != '\0')
 		{
-			wprintw(gameWindow, "\n%s", message.content);
-			wprintw(chatWindow, "\n%s", message.content);
 			gnutls_record_send(tlsSession, &message, 1024);			
 		}
 	}
