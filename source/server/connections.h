@@ -9,9 +9,9 @@
 #include <gnutls/gnutls.h>
 
 struct ClientConnection
-{
-	// TODO: Pointer to player struct.
+{	
 	gnutls_session_t * tlsSession;
+	struct Player * player;
 	int fileDescriptor;	
 };
 
@@ -35,7 +35,7 @@ struct ClientConnection * findConnectionByFileDescriptor(struct ClientConnection
 struct ClientConnection * findConnectionByTlsSession(struct ClientConnectionList * list, gnutls_session_t * tlsSession);
 
 int removeConnectionByFileDescriptor(struct ClientConnectionList * list, int fileDescriptor);
-int addNewConnection(struct ClientConnectionList * list, int fileDescriptor, gnutls_session_t * tlsSession);
+struct ClientConnection * addNewConnection(struct ClientConnectionList * list, int fileDescriptor, gnutls_session_t * tlsSession);
 
 #endif
 // ===================================================

@@ -19,6 +19,7 @@
 #include <netinet/in.h>
 #include <gnutls/gnutls.h>
 
+#include "player-data.h"
 #include "connections.h"
 #include "../messages.h"
 #include "scheme-integration.h"
@@ -159,7 +160,9 @@ int main (int argc, char ** argv)
 				epoll_ctl(connectedClients, EPOLL_CTL_ADD, newSocket, &watchedEvents);
 
 				// Add the connection to the list:
-				addNewConnection(&clientConnections, newSocket, tlsSession);
+				struct ClientConnection * newConnection = addNewConnection(&clientConnections, newSocket, tlsSession);
+				newConnection->player = createNewPlayer(newConnection);
+				sprintf(newConnection->player->name, "Player %02d", clientConnections.clientCount);
 				
 				// Print a message:
 				printf("New connection established. %d client(s), session ID %u.\n",
@@ -171,8 +174,10 @@ int main (int argc, char ** argv)
 				struct ClientConnection * connection = findConnectionByFileDescriptor(&clientConnections, events[index].data.fd);
 				if (connection != NULL)
 				{
-					struct ClientToServerMessage message;
-					int returnValue = gnutls_record_recv(*connection->tlsSession, &message, sizeof(struct ClientToServerMessage));
+					// Read the data from the TLS session:
+				  	struct ClientToServerMessage message;
+				  	int returnValue = gnutls_record_recv(*connection->tlsSession, &message, sizeof(struct ClientToServerMessage));
+				       
 					if (returnValue == 0 || returnValue == -10)
 					{
 						printf("Closing session ID: %u.\n", *connection->tlsSession);
@@ -180,6 +185,7 @@ int main (int argc, char ** argv)
 						gnutls_bye(*connection->tlsSession, 2);
 						shutdown(connection->fileDescriptor, 2);
 						close(connection->fileDescriptor);
+						deallocatePlayer(&connection->player);
 						removeConnectionByFileDescriptor(&clientConnections, connection->fileDescriptor);
 					}
 					else if (returnValue == sizeof(struct ClientToServerMessage))
@@ -188,18 +194,26 @@ int main (int argc, char ** argv)
 
 						// Copy the message to the output format:
 						outputMessage.type = LOCAL_CHAT;
-						sprintf(outputMessage.name, "UNNAMED");
+						
+						if (connection->player != NULL)
+						{
+							strncpy(outputMessage.name, connection->player->name, 64);
+						}
+						else
+						{
+							sprintf(outputMessage.name, "UNNAMED");
+						}
+
 						strncpy(outputMessage.content, message.content, MESSAGE_CONTENT_LENGTH);
 
+						// Echo the message into all other clients: (Temporary)
 						struct ClientConnectionNode * currentClient = clientConnections.head;
 						while (currentClient != NULL)
 						{
 							gnutls_record_send(*currentClient->connection->tlsSession, &outputMessage,
 											   sizeof(struct ServerToClientMessage));
 							currentClient = currentClient->next;
-						}
-						// printf("%s\n", message.content);
-						// fflush(stdout);
+						}					
 					}
 				}
 				else
@@ -216,7 +230,7 @@ int main (int argc, char ** argv)
 	}
 	
 	// Wait for all other threads to terminate:
-    //pthread_join(schemeREPLThread, NULL);
+	//pthread_join(schemeREPLThread, NULL);
 	
 	// Return a successful status code to the operating system:
 	return 0;

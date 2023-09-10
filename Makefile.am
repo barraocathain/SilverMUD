@@ -1,10 +1,11 @@
 bin_PROGRAMS = SilverMUDServer SilverMUDClient
 dist_doc_DATA = README.org
-SilverMUDServer_CFLAGS = -I/usr/include/guile/3.0 -I/usr -lguile-3.0 -lgc -lpthread -ldl -lgnutls -g
-SilverMUDClient_CFLAGS = -I/usr/include/guile/3.0 -I/usr -lguile-3.0 -lgc -lpthread -ldl -lgnutls -g -lncurses
+SilverMUDServer_CFLAGS = -lgnutls -g $(GUILE_CFLAGS) $(GUILE_LIBS)
+SilverMUDClient_CFLAGS = -lgnutls -g -lncurses $(GUILE_CFLAGS) $(GUILE_LIBS)
 
 SilverMUDServer_SOURCES = \
 	source/messages.c \
+	source/server/player-data.c \
 	source/server/connections.c \
 	source/server/scheme-integration.c \
 	source/server/main.c 

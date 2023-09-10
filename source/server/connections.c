@@ -121,7 +121,7 @@ int removeConnectionByFileDescriptor(struct ClientConnectionList * list, int fil
 	return 0;
 }
 
-int addNewConnection(struct ClientConnectionList * list, int fileDescriptor, gnutls_session_t * tlsSession)
+struct ClientConnection * addNewConnection(struct ClientConnectionList * list, int fileDescriptor, gnutls_session_t * tlsSession)
 {
 	// Allocate memory for the structures:
 	struct ClientConnectionNode * newConnectionNode = calloc(1, sizeof(struct ClientConnectionNode));
@@ -141,7 +141,7 @@ int addNewConnection(struct ClientConnectionList * list, int fileDescriptor, gnu
 
 		list->clientCount++;
 
-		return 0;
+		return newConnectionNode->connection;
 	}
 
 	// Insert it in the appropriate place in the list:
@@ -161,7 +161,7 @@ int addNewConnection(struct ClientConnectionList * list, int fileDescriptor, gnu
 				
 				list->clientCount++;
 
-				return 0;
+				return newConnectionNode->connection;
 			}
 			else
 			{
@@ -183,7 +183,7 @@ int addNewConnection(struct ClientConnectionList * list, int fileDescriptor, gnu
 		}		
 		list->clientCount++;
 
-		return 0;
+		return newConnectionNode->connection;
 	}
 }
 

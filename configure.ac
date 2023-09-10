@@ -5,4 +5,5 @@ AC_CONFIG_HEADERS([source/config.h])
 AC_CONFIG_FILES([
 	Makefile
 ])
+PKG_CHECK_MODULES([GUILE], [guile-3.0])
 AC_OUTPUT

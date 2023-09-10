@@ -1,4 +1,4 @@
-#+TITLE: SilverMUD Design Document
+#+TITLE: SilverMUD Implementation Document
 This document contains information about various implementation details of
 SilverMUD, as a scratchpad for decisions before implementation.
 
