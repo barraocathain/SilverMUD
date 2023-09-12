@@ -1,0 +1,9 @@
+#+TITLE: SilverMUD: Gamemaster's Guidebook
+#+SUBTITLE: SilverMUD First Edition
+#+AUTHOR: Barra Ó Catháin
+
+* How To Run SilverMUD, The Software:
+
+* How To Run SilverMUD, The Game:
+
+* Creating Content:

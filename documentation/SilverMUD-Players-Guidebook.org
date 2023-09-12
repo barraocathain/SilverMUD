@@ -1,0 +1,15 @@
+#+TITLE: SilverMUD: Player's Guidebook
+#+SUBTITLE: SilverMUD First Edition
+#+AUTHOR: Barra Ó Catháin
+
+* Getting Started:
+
+* Basic Commands:
+
+* Interacting With The World:
+
+* The Character System:
+
+* The Combat System:
+
+* Commands In Depth:

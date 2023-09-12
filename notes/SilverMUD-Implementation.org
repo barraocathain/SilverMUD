@@ -14,6 +14,7 @@ SilverMUD, as a scratchpad for decisions before implementation.
 |     3 | Local Chat Message     |
 |     4 | Player Chat Message    |
 |     5 | Party Chat Message     |
+|     6 | Player Emote Message   |
 |-------+------------------------|
 
 Further values remain open for possible additional message types.
