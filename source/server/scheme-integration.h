@@ -6,14 +6,8 @@
 #ifndef SCHEME_INTEGRATION_H
 #define SCHEME_INTEGRATION_H
 
-struct SchemeThreadArguments                                        
-{                                                                   
-                                                                    
-};                                                                  
-                                                                    
-// The function ran by the Scheme thread which initializes the REPL:
-void * schemeREPLHandler (void * threadParameters);               
-                                                                    
+SCM scheme_get_player_by_name(SCM name);
+
 #endif
 // ==========================================================
 // | End of scheme-integration.h, copyright notice follows. |

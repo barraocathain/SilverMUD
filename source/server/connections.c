@@ -8,7 +8,7 @@
 
 #include "connections.h"
 
-struct ClientConnectionNode * findMiddle(struct ClientConnectionNode * start, struct ClientConnectionNode * end)
+static struct ClientConnectionNode * findMiddle(struct ClientConnectionNode * start, struct ClientConnectionNode * end)
 {
 	while (start != end)
 	{

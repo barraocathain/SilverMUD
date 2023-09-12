@@ -5,19 +5,60 @@
 // =========================================
 #ifndef PLAYER_DATA_H
 #define PLAYER_DATA_H
+#include <stdbool.h>
 #include "connections.h"
 
+// =================================================================
+// Players - A structure for representing a single player character:
+// =================================================================
 struct Player
 {
 	struct ClientConnection * connection;
 	char name[64];
 };
 
+// Functions:
+// ==========
+
 // Allocates and sets up a new player according to the world's starter character sheet:
 struct Player * createNewPlayer(struct ClientConnection * connection);
 
 // Deallocates a player:
 void deallocatePlayer(struct Player ** player);
+
+// ========================================================================================
+// Player Lists - A structure for managing a collection of players in a doubly linked list:
+// ========================================================================================
+struct PlayerListNode
+{
+  	struct Player * player;
+	struct PlayerListNode * next, * previous;
+};
+
+struct PlayerList
+{
+	size_t count;
+	struct PlayerListNode * head, * tail;
+};
+
+// Functions:
+// ==========
+
+struct PlayerList * createPlayerList();
+void deallocatePlayerList(struct PlayerList ** playerList);
+
+// Adds a Player into a PlayerList, in a sorted position by character name.
+// Returns the count of players in the list:
+int addToPlayerList(struct Player * player, struct PlayerList * playerList);
+
+// Remove a Player from a PlayerList. Returns the count of players in the list:
+int removeFromPlayerList(struct Player * player, struct PlayerList * playerList);
+
+// Returns the Player with the given name from a PlayerList, or NULL otherwise:
+struct Player * getFromPlayerList(char * playerName, struct PlayerList * playerList);
+
+// Returns true if the given Player is in the given PlayerList:
+bool isInPlayerList(struct Player * player, struct PlayerList * playerList);
 
 #endif
 // ===================================================

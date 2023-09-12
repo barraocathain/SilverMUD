@@ -5,23 +5,7 @@
 // ===========================================
 #include <libguile.h>
 
-#include "scheme-integration.h"
-
-// The function ran by the Scheme thread which runs a text-based REPL:
-void * schemeREPLHandler (void * threadParameters)
-{
-	// Initialize Scheme:
-	scm_init_guile();
-
-	// Enable Readline support:
-	scm_c_eval_string("(begin (use-modules (ice-9 readline)) (activate-readline))");
-
-	// Start a Scheme REPL:
-	scm_shell(0, NULL);
-	
-	// Return NULL to the calling thread:
-	return NULL;
-}
+SCM scheme_get_player_by_name(SCM name);
 
 // ==========================================================
 // | End of scheme-integration.c, copyright notice follows. |

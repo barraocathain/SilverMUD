@@ -101,6 +101,9 @@ int main (int argc, char ** argv)
 	
 	// Create a client connection list to allow us to associate TLS sessions and sockets and players:
 	struct ClientConnectionList clientConnections;
+
+	// Create some structures needed to store global state:
+	struct PlayerList * globalPlayerList = createPlayerList();
 	
 	// Start a REPL thread:
 	//pthread_t schemeREPLThread;
@@ -120,7 +123,7 @@ int main (int argc, char ** argv)
 		}
 		
 		for (int index = 0; index < eventsCount; index++)
-		{			
+		{
 			// If it's the master socket, it's a new client connecting:
 			if (events[index].data.fd == masterSocket)
 			{
@@ -134,14 +137,13 @@ int main (int argc, char ** argv)
 				// Accept the connection:
 				int newSocket = accept(masterSocket, NULL, NULL);
 				gnutls_transport_set_int(*tlsSession, newSocket);
-				
+
 				// Perform a TLS handshake:
 				int handshakeReturnValue = 0;
 				do 
 				{
 					handshakeReturnValue = gnutls_handshake(*tlsSession);
 				} while (handshakeReturnValue < 0 && gnutls_error_is_fatal(handshakeReturnValue) == 0);
-
 
 				// If the handshake was unsuccessful, close the connection:
 				if (handshakeReturnValue < 0)
@@ -162,7 +164,9 @@ int main (int argc, char ** argv)
 				// Add the connection to the list:
 				struct ClientConnection * newConnection = addNewConnection(&clientConnections, newSocket, tlsSession);
 				newConnection->player = createNewPlayer(newConnection);
-				sprintf(newConnection->player->name, "Player %02d", clientConnections.clientCount);
+				sprintf(newConnection->player->name, "Player %02d", globalPlayerList->count + 1);
+				addToPlayerList(newConnection->player, globalPlayerList);
+
 				
 				// Print a message:
 				printf("New connection established. %d client(s), session ID %u.\n",
@@ -175,18 +179,17 @@ int main (int argc, char ** argv)
 				if (connection != NULL)
 				{
 					// Read the data from the TLS session:
-				  	struct ClientToServerMessage message;
-				  	int returnValue = gnutls_record_recv(*connection->tlsSession, &message, sizeof(struct ClientToServerMessage));
+					struct ClientToServerMessage message;
+					int returnValue = gnutls_record_recv(*connection->tlsSession, &message, sizeof(struct ClientToServerMessage));
 				       
 					if (returnValue == 0 || returnValue == -10)
 					{
-						printf("Closing session ID: %u.\n", *connection->tlsSession);
 						epoll_ctl(connectedClients, EPOLL_CTL_DEL, connection->fileDescriptor, &watchedEvents);
-						gnutls_bye(*connection->tlsSession, 2);
 						shutdown(connection->fileDescriptor, 2);
-						close(connection->fileDescriptor);
-						deallocatePlayer(&connection->player);
 						removeConnectionByFileDescriptor(&clientConnections, connection->fileDescriptor);
+						close(connection->fileDescriptor);
+						//deallocatePlayer(&connection->player);
+						continue;
 					}
 					else if (returnValue == sizeof(struct ClientToServerMessage))
 					{
@@ -231,6 +234,9 @@ int main (int argc, char ** argv)
 	
 	// Wait for all other threads to terminate:
 	//pthread_join(schemeREPLThread, NULL);
+
+	// Deallocate the global state structures:
+	deallocatePlayerList(&globalPlayerList);
 	
 	// Return a successful status code to the operating system:
 	return 0;
