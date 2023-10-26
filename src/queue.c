@@ -7,7 +7,7 @@
 queue * createQueue(void)
 {
 	// Allocate the memory for the queue:
-	queue * newQueue = malloc(sizeof(queue));
+	queue * newQueue = calloc(1, sizeof(queue));
 
 	// Instantiate the variables in the data-structure:
 	newQueue->itemCount = 0;
