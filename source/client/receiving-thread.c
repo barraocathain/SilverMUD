@@ -37,10 +37,34 @@ void * receivingThreadHandler(void * threadArguments)
 	while (true)
 	{
 		gnutls_record_recv(session, &currentMessage, sizeof(struct ServerToClientMessage));
-		wattrset(chatWindow, A_BOLD);
-		wprintw(chatWindow, "<%s>: ", currentMessage.name);
-		wattrset(chatWindow, A_NORMAL);
-		wprintw(chatWindow, "%s\n", currentMessage.content);
+
+		switch (currentMessage.type)
+		{
+			case SYSTEM:
+			{
+				wattrset(gameWindow, A_BOLD);
+				wprintw(gameWindow, "%s\n", currentMessage.content);
+				wattrset(gameWindow, A_NORMAL);
+				break;
+			}
+			case LOCAL_CHAT:
+			{
+				wattrset(chatWindow, A_BOLD);
+				wprintw(chatWindow, "<%s>: ", currentMessage.name);
+				wattrset(chatWindow, A_NORMAL);
+				wprintw(chatWindow, "%s\n", currentMessage.content);
+				break;
+			}
+			default:
+			{
+				wattrset(chatWindow, A_BOLD);
+				wprintw(chatWindow, "<%s>: ", currentMessage.name);
+				wattrset(chatWindow, A_NORMAL);
+				wprintw(chatWindow, "%s\n", currentMessage.content);
+				break;
+			}
+		}
+
 		redrawClientLayout(gameWindow, chatWindow, inputWindow);
 	}
 }

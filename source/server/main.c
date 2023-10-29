@@ -167,6 +167,14 @@ int main (int argc, char ** argv)
 				sprintf(newConnection->player->name, "Player %02d", globalPlayerList->count + 1);
 				addToPlayerList(newConnection->player, globalPlayerList);
 
+				// Send a welcome message:
+				struct ServerToClientMessage welcomeMessage;
+				welcomeMessage.type = SYSTEM;
+				sprintf(welcomeMessage.content, (clientConnections.clientCount > 1) ?
+						"Welcome to the server. There are %d players connected." : "Welcome to the server. There is %d player connected.",
+						clientConnections.clientCount);
+
+				gnutls_record_send(*tlsSession, &welcomeMessage, sizeof(struct ServerToClientMessage));
 				
 				// Print a message:
 				printf("New connection established. %d client(s), session ID %u.\n",
