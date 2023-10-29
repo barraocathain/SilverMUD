@@ -138,6 +138,50 @@ int addToPlayerList(struct Player * player, struct PlayerList * playerList)
 	}
 }
 
+int removeFromPlayerList(struct Player * player, struct PlayerList * playerList)
+{
+	struct PlayerListNode * currentNode = playerList->head;
+	while (currentNode != NULL)
+	{
+		if (currentNode->player == player)
+		{
+			// Adjust the proper pointers:
+			if (currentNode->previous)
+			{
+				currentNode->previous->next = currentNode->next;
+			}
+			if (currentNode->next)
+			{
+				currentNode->next->previous = currentNode->previous;					
+			}
+
+			// Handle the special case of the head and tail of the list:
+			if (playerList->head == currentNode)
+			{
+				playerList->head == playerList->head->next;
+			}
+			if (playerList->tail == currentNode)
+			{
+				playerList->tail == playerList->tail->previous;
+			}
+
+			// Handle the special case of an empty list:
+			if (playerList->count - 1 == 0)
+			{
+				playerList->head = NULL;
+				playerList->tail = NULL;
+			}
+			
+			// Delete the node:
+			free(currentNode);
+
+			return --(playerList->count);
+		}
+		currentNode = currentNode->next;
+	}
+}
+
+
 // Returns the Player with the given name from a PlayerList, or NULL otherwise:
 struct Player * getFromPlayerList(char * playerName, struct PlayerList * playerList)
 {

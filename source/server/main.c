@@ -170,10 +170,11 @@ int main (int argc, char ** argv)
 				// Send a welcome message:
 				struct ServerToClientMessage welcomeMessage;
 				welcomeMessage.type = SYSTEM;
-				sprintf(welcomeMessage.content, (clientConnections.clientCount > 1) ?
-						"Welcome to the server. There are %d players connected." : "Welcome to the server. There is %d player connected.",
+				sprintf(welcomeMessage.content,
+						(clientConnections.clientCount > 1) ?
+						"Welcome to the server. There are %d players connected." :
+						"Welcome to the server. There is %d player connected.",
 						clientConnections.clientCount);
-
 				gnutls_record_send(*tlsSession, &welcomeMessage, sizeof(struct ServerToClientMessage));
 				
 				// Print a message:
@@ -194,9 +195,10 @@ int main (int argc, char ** argv)
 					{
 						epoll_ctl(connectedClients, EPOLL_CTL_DEL, connection->fileDescriptor, &watchedEvents);
 						shutdown(connection->fileDescriptor, 2);
-						removeConnectionByFileDescriptor(&clientConnections, connection->fileDescriptor);
 						close(connection->fileDescriptor);
-						//deallocatePlayer(&connection->player);
+						removeFromPlayerList(connection->player, globalPlayerList);
+						deallocatePlayer(&connection->player);
+						removeConnectionByFileDescriptor(&clientConnections, connection->fileDescriptor);					   
 						continue;
 					}
 					else if (returnValue == sizeof(struct ClientToServerMessage))
