@@ -167,7 +167,7 @@ int main (int argc, char ** argv)
 				sprintf(newConnection->player->name, "Player %02d", globalPlayerList->count + 1);
 				addToPlayerList(newConnection->player, globalPlayerList);
 
-				// Send a welcome message:
+				// Prepare a welcome message:
 				struct ServerToClientMessage welcomeMessage;
 				welcomeMessage.type = SYSTEM;
 				sprintf(welcomeMessage.content,
@@ -175,9 +175,11 @@ int main (int argc, char ** argv)
 						"Welcome to the server. There are %d players connected." :
 						"Welcome to the server. There is %d player connected.",
 						clientConnections.clientCount);
+
+				// Send the welcome message:
 				gnutls_record_send(*tlsSession, &welcomeMessage, sizeof(struct ServerToClientMessage));
 				
-				// Print a message:
+				// Report the new connection on the server:
 				printf("New connection established. %d client(s), session ID %u.\n",
 					   clientConnections.clientCount, tlsSession);
 			}
@@ -203,20 +205,21 @@ int main (int argc, char ** argv)
 					}
 					else if (returnValue == sizeof(struct ClientToServerMessage))
 					{
+						// TODO: BEGIN ACTUAL COMMAND INTERPRETER
+						// ONLY FOR DEMO
+						if (strncmp(message.content, "NAME ", 5) == 0 && message.content[5] != '\0')
+						{
+							strncpy(connection->player->name, &message.content[5], 64);
+							continue;
+						}
+						// ONLY FOR DEMO
+						
 						struct ServerToClientMessage outputMessage;
 
 						// Copy the message to the output format:
 						outputMessage.type = LOCAL_CHAT;
 						
-						if (connection->player != NULL)
-						{
-							strncpy(outputMessage.name, connection->player->name, 64);
-						}
-						else
-						{
-							sprintf(outputMessage.name, "UNNAMED");
-						}
-
+						strncpy(outputMessage.name, connection->player->name, 64);
 						strncpy(outputMessage.content, message.content, MESSAGE_CONTENT_LENGTH);
 
 						// Echo the message into all other clients: (Temporary)
