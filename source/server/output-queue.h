@@ -14,8 +14,8 @@ struct OutputMessage
 {
 	// Allows for easy reuse of existing player lists, such as the global list
 	// or an area's playerlist:	
-	bool deallocatePlayerList;
-	
+	bool deallocatePlayerList;	
+
 	struct OutputMessage * next;
 	struct PlayerList * recepients;
 	struct ServerToClientMessage * message;
@@ -37,7 +37,7 @@ size_t pushOutputMessage(struct OutputQueue * const queue,
 						 const char const * name, const char const * content,
 						 const size_t nameLength, const size_t contentLength);
 	
-struct OutputMessage * popOutputMessage();
+struct OutputMessage * popOutputMessage(struct OutputQueue * queue);
 
 void deallocateOutputMessage(struct OutputMessage ** message);
 

@@ -106,6 +106,11 @@ int main (int argc, char ** argv)
 	// Create some structures needed to store global state:
 	struct PlayerList * globalPlayerList = createPlayerList();
 	struct OutputQueue * globalOutputQueue = createOutputQueue();
+
+	scm_c_define_gsubr("push-output-message", 6, 0, 0, &push_output_message);
+	scm_c_define("*globalPlayerList*", scm_from_pointer(globalPlayerList, NULL));
+	scm_c_define("*globalOutputQueue*", scm_from_pointer(globalOutputQueue, NULL));
+	
 	// Start a REPL thread:
 	//pthread_t schemeREPLThread;
 	//pthread_create(&schemeREPLThread, NULL, schemeREPLHandler, NULL);
@@ -214,10 +219,10 @@ int main (int argc, char ** argv)
 							continue;
 						}
 						// ONLY FOR DEMO
-]					   
+
 						pushOutputMessage(globalOutputQueue, false, globalPlayerList, LOCAL_CHAT,
 										  connection->player->name, message.content,
-										  MESSAGE_NAME_LENGTH,  MESSAGE_CONTENT_LENGTH);						
+										  MESSAGE_NAME_LENGTH,  MESSAGE_CONTENT_LENGTH);
 					}
 				}
 				else
