@@ -19,6 +19,7 @@
 #include <netinet/in.h>
 #include <gnutls/gnutls.h>
 
+#include "output-queue.h"
 #include "player-data.h"
 #include "connections.h"
 #include "../messages.h"
@@ -104,7 +105,7 @@ int main (int argc, char ** argv)
 
 	// Create some structures needed to store global state:
 	struct PlayerList * globalPlayerList = createPlayerList();
-	
+	struct OutputQueue * globalOutputQueue = createOutputQueue();
 	// Start a REPL thread:
 	//pthread_t schemeREPLThread;
 	//pthread_create(&schemeREPLThread, NULL, schemeREPLHandler, NULL);
@@ -213,23 +214,10 @@ int main (int argc, char ** argv)
 							continue;
 						}
 						// ONLY FOR DEMO
-						
-						struct ServerToClientMessage outputMessage;
-
-						// Copy the message to the output format:
-						outputMessage.type = LOCAL_CHAT;
-						
-						strncpy(outputMessage.name, connection->player->name, 64);
-						strncpy(outputMessage.content, message.content, MESSAGE_CONTENT_LENGTH);
-
-						// Echo the message into all other clients: (Temporary)
-						struct ClientConnectionNode * currentClient = clientConnections.head;
-						while (currentClient != NULL)
-						{
-							gnutls_record_send(*currentClient->connection->tlsSession, &outputMessage,
-											   sizeof(struct ServerToClientMessage));
-							currentClient = currentClient->next;
-						}					
+]					   
+						pushOutputMessage(globalOutputQueue, false, globalPlayerList, LOCAL_CHAT,
+										  connection->player->name, message.content,
+										  MESSAGE_NAME_LENGTH,  MESSAGE_CONTENT_LENGTH);						
 					}
 				}
 				else
@@ -241,7 +229,29 @@ int main (int argc, char ** argv)
 					close(events[index].data.fd);
 					removeConnectionByFileDescriptor(&clientConnections, events[index].data.fd);
 				}
+			} 
+		}
+
+		// Output the queue:
+		struct OutputMessage * currentMessage = NULL;
+		while (globalOutputQueue->count != 0)
+		{
+			currentMessage = popOutputMessage(globalOutputQueue);
+			struct PlayerListNode * currentPlayerNode = currentMessage->recepients->head;
+
+			while (currentPlayerNode != NULL)
+			{
+				gnutls_record_send(*currentPlayerNode->player->connection->tlsSession,
+								   currentMessage->message, sizeof(struct ServerToClientMessage));
+				currentPlayerNode = currentPlayerNode->next;
 			}
+
+			if (currentMessage->deallocatePlayerList == true)
+			{
+				deallocatePlayerList(&currentMessage->recepients);
+			}
+			
+			deallocateOutputMessage(&currentMessage);
 		}
 	}
 	

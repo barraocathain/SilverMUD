@@ -8,7 +8,8 @@ SilverMUDServer_SOURCES = \
 	source/server/player-data.c \
 	source/server/connections.c \
 	source/server/scheme-integration.c \
-	source/server/main.c 
+	source/server/output-queue.c \
+	source/server/main.c
 
 SilverMUDClient_SOURCES = \
 	source/messages.c \
