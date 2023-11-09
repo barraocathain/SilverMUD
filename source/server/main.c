@@ -110,6 +110,10 @@ int main (int argc, char ** argv)
 	scm_c_define_gsubr("push-output-message", 6, 0, 0, &push_output_message);
 	scm_c_define("*globalPlayerList*", scm_from_pointer(globalPlayerList, NULL));
 	scm_c_define("*globalOutputQueue*", scm_from_pointer(globalOutputQueue, NULL));
+
+	// Start an output thread:
+	pthread_t outputThread;
+	pthread_create(&outputThread, NULL, outputThreadHandler, (void *)globalOutputQueue);
 	
 	// Start a REPL thread:
 	//pthread_t schemeREPLThread;
@@ -235,28 +239,6 @@ int main (int argc, char ** argv)
 					removeConnectionByFileDescriptor(&clientConnections, events[index].data.fd);
 				}
 			} 
-		}
-
-		// Output the queue:
-		struct OutputMessage * currentMessage = NULL;
-		while (globalOutputQueue->count != 0)
-		{
-			currentMessage = popOutputMessage(globalOutputQueue);
-			struct PlayerListNode * currentPlayerNode = currentMessage->recepients->head;
-
-			while (currentPlayerNode != NULL)
-			{
-				gnutls_record_send(*currentPlayerNode->player->connection->tlsSession,
-								   currentMessage->message, sizeof(struct ServerToClientMessage));
-				currentPlayerNode = currentPlayerNode->next;
-			}
-
-			if (currentMessage->deallocatePlayerList == true)
-			{
-				deallocatePlayerList(&currentMessage->recepients);
-			}
-			
-			deallocateOutputMessage(&currentMessage);
 		}
 	}
 	

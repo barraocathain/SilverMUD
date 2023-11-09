@@ -1,5 +1,7 @@
 bin_PROGRAMS = SilverMUDServer SilverMUDClient
 dist_doc_DATA = README.org
+schemedir = $(pkgdatadir)/scheme
+dist_scheme_DATA = lisp
 SilverMUDServer_CFLAGS = -lgnutls -g $(GUILE_CFLAGS) $(GUILE_LIBS)
 SilverMUDClient_CFLAGS = -lgnutls -g -lncurses $(GUILE_CFLAGS) $(GUILE_LIBS)
 

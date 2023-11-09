@@ -6,7 +6,38 @@
 #include <string.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include "player-data.h"
 #include "output-queue.h"
+
+// A thread handler for constantly outputting messages from an output queue:
+void * outputThreadHandler(void * outputQueue)
+{
+	struct OutputQueue * queue = (struct OutputQueue *)outputQueue;	
+	struct OutputMessage * currentMessage = NULL;
+	
+	while (true)
+	{
+			currentMessage = popOutputMessage(queue);
+			if (currentMessage != NULL)
+			{
+				struct PlayerListNode * currentPlayerNode = currentMessage->recepients->head;
+
+				while (currentPlayerNode != NULL)
+				{
+					gnutls_record_send(*currentPlayerNode->player->connection->tlsSession,
+									   currentMessage->message, sizeof(struct ServerToClientMessage));
+					currentPlayerNode = currentPlayerNode->next;
+				}
+
+				if (currentMessage->deallocatePlayerList == true)
+				{
+					deallocatePlayerList(&currentMessage->recepients);
+				}
+			
+				deallocateOutputMessage(&currentMessage);
+			}
+	}
+}
 
 struct OutputQueue * const createOutputQueue()
 {

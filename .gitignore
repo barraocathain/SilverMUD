@@ -109,3 +109,5 @@ SilverMUDClient
 config.h
 config.h.in
 stamp-h1
+
+build/

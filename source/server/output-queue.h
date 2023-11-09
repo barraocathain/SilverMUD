@@ -28,6 +28,8 @@ struct OutputQueue
 	struct OutputMessage * front, * back;	
 };
 
+void * outputThreadHandler(void * outputQueue);
+
 struct OutputQueue * const createOutputQueue();
 
 size_t pushOutputMessage(struct OutputQueue * const queue,
