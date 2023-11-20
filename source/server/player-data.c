@@ -31,6 +31,7 @@ struct Player * createNewPlayer(struct ClientConnection * connection)
 {
 	struct Player * newPlayer = calloc(1, sizeof(struct Player));
 	newPlayer->connection = connection;
+	newPlayer->name = calloc(PLAYER_NAME_LENGTH, sizeof(char));
 	
 	return newPlayer;
 }
@@ -38,6 +39,7 @@ struct Player * createNewPlayer(struct ClientConnection * connection)
 // Deallocates a player:
 void deallocatePlayer(struct Player ** player)
 {
+	free((*player)->name);
 	free(*player);
 	*player = NULL;
 }

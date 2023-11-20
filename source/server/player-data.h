@@ -5,6 +5,7 @@
 // =========================================
 #ifndef PLAYER_DATA_H
 #define PLAYER_DATA_H
+#define PLAYER_NAME_LENGTH 64
 #include <stdbool.h>
 #include "connections.h"
 
@@ -14,7 +15,7 @@
 struct Player
 {
 	struct ClientConnection * connection;
-	char name[64];
+	char * name;
 };
 
 // Functions:
