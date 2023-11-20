@@ -24,6 +24,8 @@ struct OutputMessage
 struct OutputQueue
 {
 	pthread_mutex_t mutex;
+	pthread_mutex_t waitMutex;
+	pthread_cond_t updated;
 	size_t count;
 	struct OutputMessage * front, * back;	
 };

@@ -17,25 +17,30 @@ void * outputThreadHandler(void * outputQueue)
 	
 	while (true)
 	{
-			currentMessage = popOutputMessage(queue);
-			if (currentMessage != NULL)
+		if (queue->count == 0)
+		{
+			pthread_cond_wait(&queue->updated, &queue->waitMutex);
+		}
+		
+		currentMessage = popOutputMessage(queue);		   
+		if (currentMessage != NULL)
+		{
+			struct PlayerListNode * currentPlayerNode = currentMessage->recepients->head;
+
+			while (currentPlayerNode != NULL)
 			{
-				struct PlayerListNode * currentPlayerNode = currentMessage->recepients->head;
-
-				while (currentPlayerNode != NULL)
-				{
-					gnutls_record_send(*currentPlayerNode->player->connection->tlsSession,
-									   currentMessage->message, sizeof(struct ServerToClientMessage));
-					currentPlayerNode = currentPlayerNode->next;
-				}
-
-				if (currentMessage->deallocatePlayerList == true)
-				{
-					deallocatePlayerList(&currentMessage->recepients);
-				}
-			
-				deallocateOutputMessage(&currentMessage);
+				gnutls_record_send(*currentPlayerNode->player->connection->tlsSession,
+								   currentMessage->message, sizeof(struct ServerToClientMessage));
+				currentPlayerNode = currentPlayerNode->next;
 			}
+
+			if (currentMessage->deallocatePlayerList == true)
+			{
+				deallocatePlayerList(&currentMessage->recepients);
+			}
+			
+			deallocateOutputMessage(&currentMessage);
+		}
 	}
 }
 
@@ -46,6 +51,7 @@ struct OutputQueue * const createOutputQueue()
 
 	// Initialize it:
 	pthread_mutex_init(&newQueue->mutex, NULL);
+	pthread_cond_init(&newQueue->updated, NULL);
 	newQueue->count = 0;
 	newQueue->front = NULL;
 	newQueue->back = NULL;
@@ -101,6 +107,8 @@ size_t pushOutputMessage(struct OutputQueue * const queue,
 	// Leaving critical section - Unlock the queue:
 	pthread_mutex_unlock(&queue->mutex);
 
+	pthread_cond_signal(&queue->updated);
+	
 	return queue->count;
 }
 
