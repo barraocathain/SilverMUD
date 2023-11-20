@@ -37,11 +37,6 @@ int main (int argc, char ** argv)
 	// Initialize Scheme:
 	scm_init_guile();
 
-	// Start the REPL server on a UNIX socket:
-	scm_c_eval_string("(begin (use-modules (system repl server))"
-					  "(if (file-exists? \"silvermud-repl\") (delete-file \"silvermud-repl\"))"
-					  "(spawn-server (make-unix-domain-server-socket #:path \"silvermud-repl\")))");
-
 	// Create a socket to listen for connections on:
 	int masterSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (masterSocket < 0)
@@ -107,10 +102,19 @@ int main (int argc, char ** argv)
 	struct PlayerList * globalPlayerList = createPlayerList();
 	struct OutputQueue * globalOutputQueue = createOutputQueue();
 
-	scm_c_define_gsubr("push-output-message", 6, 0, 0, &push_output_message);
-	scm_c_define("*globalPlayerList*", scm_from_pointer(globalPlayerList, NULL));
-	scm_c_define("*globalOutputQueue*", scm_from_pointer(globalOutputQueue, NULL));
+	// Define a module for use in the REPL containing our needed primitives:
+	SchemeModulePointers schemePointers;
+	schemePointers.globalPlayerList = globalPlayerList;
+	schemePointers.globalOutputQueue = globalOutputQueue;
+	
+	scm_c_define_module("silvermud primitives", initialize_silvermud_primitives, &schemePointers);
+	scm_c_use_module("silvermud primitives");
 
+	// Start the REPL server on a UNIX socket:
+	scm_c_eval_string("(begin (use-modules (system repl server))"
+					  "(if (file-exists? \"silvermud-repl\") (delete-file \"silvermud-repl\"))"
+					  "(spawn-server (make-unix-domain-server-socket #:path \"silvermud-repl\")))");
+	
 	// Start an output thread:
 	pthread_t outputThread;
 	pthread_create(&outputThread, NULL, outputThreadHandler, (void *)globalOutputQueue);

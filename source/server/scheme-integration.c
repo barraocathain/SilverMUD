@@ -8,8 +8,18 @@
 
 #include "../messages.h"
 #include "output-queue.h"
+#include "scheme-integration.h"
 
-SCM scheme_get_player_by_name(SCM name, SCM queue);
+void initialize_silvermud_primitives (void * gameState)
+{
+	SchemeModulePointers * pointers = (SchemeModulePointers *)gameState;
+	scm_c_define_gsubr("push-output-message", 6, 0, 0, &push_output_message);
+	scm_c_define("*global-player-list*", scm_from_pointer(pointers->globalPlayerList, NULL));
+	scm_c_define("*global-output-queue*", scm_from_pointer(pointers->globalOutputQueue, NULL));
+	scm_c_export("push-output-message", "*global-player-list*", "*global-output-queue*", NULL);
+}
+
+//SCM scheme_get_player_by_name(SCM name, SCM queue)
 
 SCM push_output_message(SCM queue, SCM deallocate_list, SCM recepients, SCM type, SCM name, SCM content)
 {

@@ -6,6 +6,14 @@
 #ifndef SCHEME_INTEGRATION_H
 #define SCHEME_INTEGRATION_H
 
+typedef struct SchemeModulePointers
+{
+	struct PlayerList * globalPlayerList;
+	struct OutputQueue * globalOutputQueue;
+} SchemeModulePointers;
+
+void initialize_silvermud_primitives (void * gameState);
+
 SCM scheme_get_player_by_name(SCM name);
 
 SCM push_output_message(SCM queue, SCM deallocate_list, SCM recepients, SCM type, SCM name, SCM content);
