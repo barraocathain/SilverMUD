@@ -7,7 +7,7 @@
 (define message-everyone (lambda (name content)
 						   (push-output-message *global-output-queue* #f *global-player-list*
 												8 name content)))
-(define system-message (lambda (contennt)
+(define system-message (lambda (content)
 						 (push-output-message *global-output-queue* #f *global-player-list*
 											  0 "" content)))
 
