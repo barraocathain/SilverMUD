@@ -4,7 +4,10 @@
 // | See end of file for copyright notice. |
 // =========================================
 #include <stdio.h>
+#include <netdb.h>
+#include <string.h>
 #include <stdlib.h>
+#include <getopt.h>
 #include <limits.h>
 #include <pthread.h>
 #include <ncurses.h>
@@ -19,11 +22,47 @@
 #include "receiving-thread.h"
 
 int main (int argc, char ** argv)
-{	
+{
+	static char serverPort[HOST_NAME_MAX] = "5050";
+	static char serverHostname[HOST_NAME_MAX] = "127.0.0.1";
+	struct addrinfo * serverInformation;
+	
 	// Print a welcome message:
 	printf("SilverMUD Client - Starting Now.\n"
 		   "================================\n");
 
+	// Configure command-line options:
+	static struct option longOptions[] =
+	{
+		{"host", required_argument, 0, 'h' },
+		{"port", required_argument, 0, 'p' }
+	};
+	bool hostSpecified = false, portSpecified = false;
+	
+	// Parse command-line options:
+	int selectedOption = 0, optionIndex = 0;
+	
+	while ((selectedOption = getopt_long(argc, argv, "h:p:", longOptions, &optionIndex)) != -1) 
+	{
+		switch (selectedOption)
+		{
+			case 'h':
+			{
+				printf("Connecting to host: %s\n", optarg);
+				hostSpecified = true;
+				strncpy(serverHostname, optarg, HOST_NAME_MAX);
+				break;
+			}
+			case 'p':
+			{
+				printf("Connecting to port: %s\n", optarg);
+				portSpecified = true;
+				strncpy(serverPort, optarg, HOST_NAME_MAX);
+				break;
+			}
+		}
+	}
+	
 	// Create a socket for communicating with the server:
 	int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (serverSocket == -1)
@@ -33,13 +72,14 @@ int main (int argc, char ** argv)
 	}
 
 	// Set up the server address structure to point to the server:
-	struct sockaddr_in serverAddress;
-	serverAddress.sin_family = AF_INET;
-	serverAddress.sin_addr.s_addr = inet_addr("127.0.0.1");
-	serverAddress.sin_port = htons(5000);	
-
+	if (getaddrinfo(serverHostname, serverPort, NULL, &serverInformation) != 0)
+	{
+		printf("Server lookup failed. Aborting.\n");
+		exit(EXIT_FAILURE);
+	}
+	
 	// Connect to the server:
-	if (connect(serverSocket, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in)) != 0)
+	if (connect(serverSocket, serverInformation->ai_addr, serverInformation->ai_addrlen) != 0)
 	{
 		printf("Failed to connect to the server. Aborting.\n");
 		exit(EXIT_FAILURE);
