@@ -21,15 +21,17 @@
 #include "client-drawing.h"
 #include "receiving-thread.h"
 
+static char serverPort[HOST_NAME_MAX] = "5050";
+static char serverHostname[HOST_NAME_MAX] = "127.0.0.1";
+static bool hostSpecified = false, portSpecified = false;
+
 int main (int argc, char ** argv)
-{
-	static char serverPort[HOST_NAME_MAX] = "5050";
-	static char serverHostname[HOST_NAME_MAX] = "127.0.0.1";
-	struct addrinfo * serverInformation;
-	
+{	
 	// Print a welcome message:
 	printf("SilverMUD Client - Starting Now.\n"
 		   "================================\n");
+
+	struct addrinfo * serverInformation;
 
 	// Configure command-line options:
 	static struct option longOptions[] =
@@ -37,7 +39,6 @@ int main (int argc, char ** argv)
 		{"host", required_argument, 0, 'h' },
 		{"port", required_argument, 0, 'p' }
 	};
-	bool hostSpecified = false, portSpecified = false;
 	
 	// Parse command-line options:
 	int selectedOption = 0, optionIndex = 0;
@@ -78,13 +79,22 @@ int main (int argc, char ** argv)
 		exit(EXIT_FAILURE);
 	}
 	
-	// Connect to the server:
-	if (connect(serverSocket, serverInformation->ai_addr, serverInformation->ai_addrlen) != 0)
+	// Connect to the server, iterating through addresses until we get SilverMUD:
+	struct addrinfo * currentAddress;
+	for (currentAddress = serverInformation; currentAddress != NULL; currentAddress = currentAddress->ai_next)
+	{
+		if (connect(serverSocket, serverInformation->ai_addr, serverInformation->ai_addrlen) != -1)
+		{
+			break;
+		}
+	}
+	if (currentAddress == NULL)
 	{
 		printf("Failed to connect to the server. Aborting.\n");
 		exit(EXIT_FAILURE);
 	}
-
+	freeaddrinfo(serverInformation);
+		
 	// Set up a GnuTLS session and handshake with the server:
 	gnutls_session_t tlsSession = NULL;
 	if (gnutls_init(&tlsSession,  GNUTLS_CLIENT) < 0)
@@ -94,19 +104,30 @@ int main (int argc, char ** argv)
 
 	gnutls_anon_client_credentials_t clientKey = NULL;
 	gnutls_anon_allocate_client_credentials(&clientKey);
-	gnutls_credentials_set(tlsSession, GNUTLS_CRD_ANON, &clientKey);
-
 	gnutls_transport_set_int(tlsSession, serverSocket);
-	gnutls_priority_set_direct(tlsSession, "PERFORMANCE:+ANON-ECDH:+ANON-DH", NULL);
-
+	gnutls_credentials_set(tlsSession, GNUTLS_CRD_ANON, &clientKey);
 	gnutls_handshake_set_timeout(tlsSession, GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
+	gnutls_priority_set_direct(tlsSession, "PERFORMANCE:+ANON-ECDH:+ANON-DH", NULL);
+	gnutls_server_name_set(tlsSession, GNUTLS_NAME_DNS, serverHostname, strlen(serverHostname));
 
-	int returnValue = -1;
+	int returnValue = -1, connectionAttempts = 0;
 	do
 	{
 		returnValue = gnutls_handshake(tlsSession);
+		connectionAttempts++;
+		if (connectionAttempts == 50)
+		{
+			printf("Failed to establish a TLS session. Aborting.\n");
+			exit(EXIT_FAILURE);
+		}
 	}
 	while (returnValue < 0 && gnutls_error_is_fatal(returnValue) == 0);
+
+	if (returnValue < 0)
+	{
+		printf("Failed to establish a TLS session. Aborting.\n");
+		exit(EXIT_FAILURE);		
+	}
 
 	// Initialize ncurses:
 	initscr();
