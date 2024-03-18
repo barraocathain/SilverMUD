@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <stdbool.h>
 #include <pthread.h>
 #include <libguile.h>
@@ -24,8 +25,31 @@
 #include "../messages.h"
 #include "scheme-integration.h"
 
-static const int PORT = 5000;
 static const int CONCURRENT_PLAYER_COUNT = 256;
+static char serverPort[HOST_NAME_MAX] = "5050";
+static char serverHostname[HOST_NAME_MAX] = "";
+static char serverInterface[HOST_NAME_MAX] = "";
+static char clientRequestedHost[HOST_NAME_MAX] = "";
+static size_t clientRequestedHostLength = HOST_NAME_MAX;
+static bool portSpecified = false, hostSpecified = false, interfaceSpecified = false;
+
+// Check what the client intends to connect to:
+int checkRequestedHostname(gnutls_session_t session)
+{
+	// Get the hostname the client is using to connect:
+	clientRequestedHostLength = HOST_NAME_MAX;
+	gnutls_server_name_get(session, (void *)clientRequestedHost, &clientRequestedHostLength, &(unsigned int){GNUTLS_NAME_DNS}, 0);
+	clientRequestedHost[HOST_NAME_MAX - 1] = '\0';
+	printf("Client is connecting to: %s\n", clientRequestedHost);
+
+	// Check that it's a valid hostname for SilverMUD:
+	if (hostSpecified == true && strncmp(serverHostname, clientRequestedHost, HOST_NAME_MAX) != 0)
+	{
+		return GNUTLS_E_UNRECOGNIZED_NAME;
+	}
+	
+	return 0;
+}
 
 int main (int argc, char ** argv)
 {
@@ -33,6 +57,46 @@ int main (int argc, char ** argv)
 	printf("SilverMUD Server - Starting Now.\n"
 		   "================================\n");
 
+	// Configure command-line options:   
+	static struct option longOptions[] =
+	{
+		{"port", required_argument, 0, 'p' },
+		{"host", required_argument, 0, 'h' },
+		{"interface", required_argument, 0, 'i' }
+	};   
+
+	
+	
+	// Parse command-line options:
+	int selectedOption = 0, optionIndex = 0;
+	while ((selectedOption = getopt_long(argc, argv, "p:h:i:", longOptions, &optionIndex)) != -1) 
+	{
+		switch (selectedOption)
+		{
+			case 'p':
+			{
+				printf("Using port: %s\n", optarg);
+				portSpecified = true;
+				strncpy(serverPort, optarg, HOST_NAME_MAX);
+				break;
+			}
+			case 'h':
+			{
+				printf("Using hostname: %s\n", optarg);
+				hostSpecified = true;
+				strncpy(serverHostname, optarg, HOST_NAME_MAX);
+				break;
+			}
+			case 'i':
+			{
+				printf("Using interface address: %s\n", optarg);
+				interfaceSpecified = true;
+				strncpy(serverInterface, optarg, HOST_NAME_MAX);
+				break;
+			}
+		}
+	}
+		
 	// Initialize Scheme:
 	scm_init_guile();
 
@@ -59,8 +123,10 @@ int main (int argc, char ** argv)
 
 	// Assign the IP address and port to the server address struct:
 	serverAddress.sin_family = AF_INET;
-	serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-	serverAddress.sin_port = htons(PORT);
+	serverAddress.sin_addr.s_addr = (interfaceSpecified) ?
+		inet_addr(serverInterface) : htonl(INADDR_ANY);
+	serverAddress.sin_port = (portSpecified) ?
+		htons(atoi(serverPort)) : htons(5050);
 
 	// Bind the master socket to the server address:
 	if ((bind(masterSocket, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in))) != 0)
@@ -109,6 +175,8 @@ int main (int argc, char ** argv)
 	//pthread_t schemeREPLThread;
 	//pthread_create(&schemeREPLThread, NULL, schemeREPLHandler, NULL);
 
+	size_t * clientRequestedHostLength = calloc(1, sizeof(size_t));
+	
 	while (true)
 	{
 		do
@@ -133,22 +201,22 @@ int main (int argc, char ** argv)
 				gnutls_priority_set_direct(*tlsSession, "NORMAL:+ANON-ECDH:+ANON-DH", NULL);
 				gnutls_credentials_set(*tlsSession, GNUTLS_CRD_ANON, serverKey);
 				gnutls_handshake_set_timeout(*tlsSession, GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
-
+				gnutls_handshake_set_post_client_hello_function(*tlsSession, checkRequestedHostname);
 				// Accept the connection:
 				int newSocket = accept(masterSocket, NULL, NULL);
 				gnutls_transport_set_int(*tlsSession, newSocket);
-
+			  
 				// Perform a TLS handshake:
 				int handshakeReturnValue = 0;
 				do 
 				{
 					handshakeReturnValue = gnutls_handshake(*tlsSession);
 				} while (handshakeReturnValue < 0 && gnutls_error_is_fatal(handshakeReturnValue) == 0);
-
+				
 				// If the handshake was unsuccessful, close the connection:
 				if (handshakeReturnValue < 0)
 				{
-					printf("%d", handshakeReturnValue);
+					fprintf(stderr, "TLS Failure: %d\n", handshakeReturnValue);
 					fflush(stdout);
 					gnutls_bye(*tlsSession, 2);
 					shutdown(newSocket, 2);
