@@ -63,9 +63,24 @@ int main (int argc, char ** argv)
 		{"port", required_argument, 0, 'p' },
 		{"host", required_argument, 0, 'h' },
 		{"interface", required_argument, 0, 'i' }
-	};   
-
+	};
 	
+	// Check environment variables:
+	if (getenv("SILVERMUD_SERVER_PORT") != NULL)
+	{
+		portSpecified = true;
+		strncpy(serverPort, getenv("SILVERMUD_SERVER_HOST"), HOST_NAME_MAX);
+	}
+	if (getenv("SILVERMUD_SERVER_HOST") != NULL)
+	{
+		hostSpecified = true;
+		strncpy(serverHostname, getenv("SILVERMUD_SERVER_HOST"), HOST_NAME_MAX);
+	}
+	if (getenv("SILVERMUD_SERVER_INTERFACE") != NULL)
+	{
+		interfaceSpecified = true;
+		strncpy(serverInterface, getenv("SILVERMUD_SERVER_INTERFACE"), HOST_NAME_MAX);
+	}
 	
 	// Parse command-line options:
 	int selectedOption = 0, optionIndex = 0;
@@ -75,14 +90,13 @@ int main (int argc, char ** argv)
 		{
 			case 'p':
 			{
-				printf("Using port: %s\n", optarg);
 				portSpecified = true;
 				strncpy(serverPort, optarg, HOST_NAME_MAX);
 				break;
 			}
 			case 'h':
 			{
-				printf("Using hostname: %s\n", optarg);
+	
 				hostSpecified = true;
 				strncpy(serverHostname, optarg, HOST_NAME_MAX);
 				break;
@@ -96,7 +110,22 @@ int main (int argc, char ** argv)
 			}
 		}
 	}
-		
+
+	if (portSpecified)
+	{
+		printf("Using port: %s\n", serverPort);
+	}
+
+	if (hostSpecified)
+	{
+		printf("Using hostname: %s\n", serverHostname);
+	}
+
+	if (interfaceSpecified)
+	{
+		printf("Using interface: %s\n", serverInterface);
+	}
+	
 	// Initialize Scheme:
 	scm_init_guile();
 
