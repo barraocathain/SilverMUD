@@ -231,6 +231,7 @@ int main (int argc, char ** argv)
 				gnutls_credentials_set(*tlsSession, GNUTLS_CRD_ANON, serverKey);
 				gnutls_handshake_set_timeout(*tlsSession, GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
 				gnutls_handshake_set_post_client_hello_function(*tlsSession, checkRequestedHostname);
+
 				// Accept the connection:
 				int newSocket = accept(masterSocket, NULL, NULL);
 				gnutls_transport_set_int(*tlsSession, newSocket);

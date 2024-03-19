@@ -34,10 +34,16 @@ void * receivingThreadHandler(void * threadArguments)
 	wattrset(gameWindow, A_NORMAL);	
 
 	struct ServerToClientMessage currentMessage;
+	int returnValue = 0;
 	while (true)
 	{
-		gnutls_record_recv(session, &currentMessage, sizeof(struct ServerToClientMessage));
+		returnValue = gnutls_record_recv(session, &currentMessage, sizeof(struct ServerToClientMessage));
 
+		if (gnutls_error_is_fatal(returnValue))
+		{
+			exit(EXIT_SUCCESS);
+		}
+		
 		switch (currentMessage.type)
 		{
 			case SYSTEM:
