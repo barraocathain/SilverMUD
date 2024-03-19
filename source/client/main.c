@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <netdb.h>
 #include <string.h>
+#include <config.h>
 #include <stdlib.h>
 #include <getopt.h>
 #include <limits.h>
@@ -16,7 +17,6 @@
 #include <sys/socket.h>
 #include <gnutls/gnutls.h>
 
-#include "../config.h"
 #include "../messages.h"
 #include "client-drawing.h"
 #include "receiving-thread.h"

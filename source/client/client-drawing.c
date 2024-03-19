@@ -3,7 +3,7 @@
 // | Copyright (C) 2023, Barra Ó Catháin    |
 // | See end of file for copyright notice.  |
 // ==========================================
-#include "../config.h"
+#include <config.h>
 #include "client-drawing.h"
 
 void redrawClientLayout(WINDOW * gameWindow, WINDOW * chatWindow, WINDOW * inputWindow)
